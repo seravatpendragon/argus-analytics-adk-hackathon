@@ -1,0 +1,405 @@
+[
+ 
+  {
+    "indicator_config_id": "YF_PETR4_OPEN_D",
+    "enabled": true,
+    "data_category": "company_market_data", 
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY", 
+    "db_indicator_name": "PETR4.SA Preço Abertura",
+    "db_indicator_type": "company_market_price",
+    "db_indicator_frequency": "D", 
+    "db_indicator_unit": "BRL",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "Open", 
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_HIGH_D",
+    "enabled": true,
+    "data_category": "company_market_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "PETR4.SA Preço Máximo",
+    "db_indicator_type": "company_market_price",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "High",
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_LOW_D",
+    "enabled": true,
+    "data_category": "company_market_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "PETR4.SA Preço Mínimo",
+    "db_indicator_type": "company_market_price",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "Low",
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_CLOSE_D",
+    "enabled": true,
+    "data_category": "company_market_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "PETR4.SA Preço Fechamento",
+    "db_indicator_type": "company_market_price",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_ADJCLOSE_D",
+    "enabled": true,
+    "data_category": "company_market_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "PETR4.SA Preço Fechamento Ajustado",
+    "db_indicator_type": "company_market_price_adj",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_VOLUME_D",
+    "enabled": true,
+    "data_category": "company_market_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "PETR4.SA Volume",
+    "db_indicator_type": "company_market_volume",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "shares",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_column_yfinance": "Volume",
+      "initial_history_start_date": "2010-01-01",
+      "raw_data_subfolder": "yfinance_ohlcv/PETR4.SA"
+    }
+  },
+
+  
+  {
+    "indicator_config_id": "YF_PETR4_DIVIDENDS",
+    "enabled": true,
+    "data_category": "company_corporate_action",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "DIVIDENDS", 
+    "db_indicator_name": "PETR4.SA Evento Dividendo",
+    "db_indicator_type": "company_dividend_event",
+    "db_indicator_frequency": "E", 
+    "db_indicator_unit": "BRL_per_share",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "initial_history_start_date": "2000-01-01", 
+      "raw_data_subfolder": "yfinance_actions/PETR4.SA"
+    }
+  },
+
+ 
+  {
+    "indicator_config_id": "YF_PETR4_SPLITS",
+    "enabled": true,
+    "data_category": "company_corporate_action",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "SPLITS", 
+    "db_indicator_name": "PETR4.SA Evento Split Ação",
+    "db_indicator_type": "company_split_event",
+    "db_indicator_frequency": "E", 
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+
+      "initial_history_start_date": "2000-01-01", 
+      "raw_data_subfolder": "yfinance_actions/PETR4.SA"
+    }
+  },
+
+
+  {
+    "indicator_config_id": "YF_PETR4_MARKETCAP",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA MarketCap",
+    "db_indicator_type": "company_fundamental_value",
+    "db_indicator_frequency": "D", 
+    "db_indicator_unit": "BRL_absolute",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "marketCap",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_TRAILING_PE",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Trailing P/E",
+    "db_indicator_type": "company_fundamental_ratio",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "trailingPE",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_FORWARD_PE",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Forward P/E",
+    "db_indicator_type": "company_fundamental_ratio",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "forwardPE",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_PRICE_TO_BOOK",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA P/VP (Price/Book)",
+    "db_indicator_type": "company_fundamental_ratio",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "priceToBook",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_DIVIDEND_YIELD",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Dividend Yield",
+    "db_indicator_type": "company_fundamental_percent",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "%",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "dividendYield",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_BETA",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Beta",
+    "db_indicator_type": "company_fundamental_risk_metric",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "beta",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_DEBT_TO_EQUITY",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Debt/Equity",
+    "db_indicator_type": "company_fundamental_ratio",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "ratio",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "debtToEquity",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_TOTAL_REVENUE",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Total Revenue",
+    "db_indicator_type": "company_fundamental_value",
+    "db_indicator_frequency": "D", 
+    "db_indicator_unit": "BRL_absolute",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "totalRevenue",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_EBITDA",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA EBITDA",
+    "db_indicator_type": "company_fundamental_value",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL_absolute",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "ebitda",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_RETURN_ON_EQUITY",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Return on Equity (ROE)",
+    "db_indicator_type": "company_fundamental_percent",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "%",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "returnOnEquity",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_FREE_CASH_FLOW",
+    "enabled": true,
+    "data_category": "company_fundamental_data",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "INFO",
+    "db_indicator_name": "PETR4.SA Free Cash Flow",
+    "db_indicator_type": "company_fundamental_value",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL_absolute",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "freeCashflow", 
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  },
+
+ 
+  {
+    "indicator_config_id": "YF_IBOVESPA_CLOSE_D",
+    "enabled": true,
+    "data_category": "market_index_national",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "Ibovespa (^BVSP) Fechamento",
+    "db_indicator_type": "market_index_price",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "points",
+    "params": {
+      "ticker_symbol": "^BVSP",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2000-01-01",
+      "raw_data_subfolder": "yfinance_indices/BVSP"
+    }
+  },
+  {
+    "indicator_config_id": "YF_SP500_CLOSE_D",
+    "enabled": true,
+    "data_category": "market_index_international",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "S&P 500 (^GSPC) Fechamento",
+    "db_indicator_type": "market_index_price",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "points",
+    "params": {
+      "ticker_symbol": "^GSPC",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2000-01-01",
+      "raw_data_subfolder": "yfinance_indices/GSPC"
+    }
+  },
+  {
+    "indicator_config_id": "YF_VIX_CLOSE_D",
+    "enabled": true,
+    "data_category": "market_volatility_international",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "VIX (^VIX) Fechamento",
+    "db_indicator_type": "market_volatility_index",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "points",
+    "params": {
+      "ticker_symbol": "^VIX",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2000-01-01",
+      "raw_data_subfolder": "yfinance_indices/VIX"
+    }
+  },
+  {
+    "indicator_config_id": "YF_US10Y_TREASURY_YIELD_D", 
+    "enabled": true,
+    "data_category": "macro_international_yield",
+    "source_api": "YFINANCE",
+    "yfinance_data_type": "HISTORY",
+    "db_indicator_name": "US 10-Year Treasury Yield (^TNX)",
+    "db_indicator_type": "government_bond_yield",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "%", 
+    "params": {
+      "ticker_symbol": "^TNX",
+      "value_column_yfinance": "Close",
+      "initial_history_start_date": "2000-01-01",
+      "raw_data_subfolder": "yfinance_yields/TNX"
+    }
+  },
+  {
+    "indicator_config_id": "YF_PETR4_ENTERPRISE_VALUE",
+    "enabled": true,
+    "db_indicator_name": "PETR4.SA Enterprise Value",
+    "data_category": "company_fundamental",
+    "db_indicator_type": "company_fundamental_value",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL_absolute",
+    "yfinance_data_type": "INFO",
+    "params": {
+      "ticker_symbol": "PETR4.SA",
+      "value_field_yfinance_info": "enterpriseValue",
+      "raw_data_subfolder": "yfinance_info/PETR4.SA"
+    }
+  }
+]

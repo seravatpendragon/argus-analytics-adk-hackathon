@@ -1,0 +1,116 @@
+[
+  {
+    "indicator_config_id": "FGV_ICC_SA_CSV",
+    "enabled": true,
+    "source_api": "FGV_IBRE_CSV",
+    "data_category": "macro_national_consumer_confidence",
+    "db_indicator_name": "FGV IBRE Confiança Consumidor (SA)",
+    "db_indicator_type": "consumer_confidence_index_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv",
+      "raw_data_subfolder": "FGV_IBRE", 
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "Índice de Confiança do Consumidor com Ajuste Sazonal(1006982)",
+      "csv_date_format": null,
+      "file_part": "FGV_ICC_SA",
+      "source_desc": "FGV IBRE (CSV) - Índice de Confiança do Consumidor com Ajuste Sazonal (Série: 1006982)"
+    }
+  },
+  {
+    "indicator_config_id": "FGV_ICC_ISA_SA_CSV",
+    "enabled": true,
+    "source_api": "FGV_IBRE_CSV",
+    "data_category": "macro_national_consumer_confidence",
+    "db_indicator_name": "FGV IBRE Confiança Consumidor - Situação Atual (SA)",
+    "db_indicator_type": "consumer_confidence_index_present_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv",
+      "raw_data_subfolder": "FGV_IBRE",
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "Índice de Confiança do Consumidor - Situação Presente com Ajuste Sazonal(1006983)",
+      "csv_date_format": null,
+      "file_part": "FGV_ICC_ISA_SA",
+      "source_desc": "FGV IBRE (CSV) - Índice de Confiança do Consumidor - Situação Presente com Ajuste Sazonal (Série: 1006983)"
+    }
+  },
+  {
+    "indicator_config_id": "FGV_ICC_IE_SA_CSV",
+    "enabled": true,
+    "source_api": "FGV_IBRE_CSV",
+    "data_category": "macro_national_consumer_confidence",
+    "db_indicator_name": "FGV IBRE Confiança Consumidor - Expectativas (SA)",
+    "db_indicator_type": "consumer_confidence_index_expectations_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv",
+      "raw_data_subfolder": "FGV_IBRE",
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "Índice de Confiança do Consumidor - Expectativas com Ajuste Sazonal(1006984)",
+      "csv_date_format": null,
+      "file_part": "FGV_ICC_IE_SA",
+      "source_desc": "FGV IBRE (CSV) - Índice de Confiança do Consumidor - Expectativas com Ajuste Sazonal (Série: 1006984)"
+    }
+  },
+  {
+    "indicator_config_id": "FGV_IIE_BR_CSV",
+    "enabled": true,
+    "source_api": "FGV_IBRE_CSV",
+    "data_category": "macro_national_economic_uncertainty",
+    "db_indicator_name": "FGV IBRE Indicador de Incerteza da Economia (IIE-Br)",
+    "db_indicator_type": "economic_uncertainty_index",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv",
+      "raw_data_subfolder": "FGV_IBRE",
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "Indicador de Incerteza da Economia Brasil (IIE-Br)(1428452)",
+      "csv_date_format": null,
+      "file_part": "FGV_IIE_Br",
+      "source_desc": "FGV IBRE (CSV) - Indicador de Incerteza da Economia Brasil (IIE-Br) (Série: 1428452)"
+    }
+  },
+  {
+    "indicator_config_id": "FGV_ICE_SA_CSV", 
+    "enabled": true,
+    "source_api": "FGV_IBRE_CSV", 
+    "data_category": "macro_national_business_confidence",
+    "db_indicator_name": "FGV IBRE Confiança Empresarial (ICE, SA)",
+    "db_indicator_type": "business_confidence_index_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv",
+      "raw_data_subfolder": "FGV_IBRE",
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "ICE Com Ajuste Sazonal - Índice de Confiança Empresarial (CNAE 2.0)(1428467)",
+      "csv_date_format": null,
+      "file_part": "FGV_ICE_SA",
+      "source_desc": "FGV IBRE (CSV) - Índice de Confiança Empresarial com Ajuste Sazonal (Série: 1428467)"
+    }
+  },
+  {
+    "indicator_config_id": "FGV_NUCI_SA_CSV",
+    "enabled": true,
+    "source_api": "CNI_FGV_CSV", 
+    "data_category": "macro_national_capacity_utilization",
+    "db_indicator_name": "Sondagem Industrial - NUCI (SA)",
+    "db_indicator_type": "capacity_utilization_industry_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%",
+    "params": {
+      "csv_filename": "fgv_indicadores_raw.csv", 
+      "raw_data_subfolder": "FGV_IBRE_CNI", 
+      "date_column_name_in_csv": "Data",
+      "value_column_name_in_csv": "Sondagem Industrial - Nível de Utilização da Capacidade Instalada Com Ajuste Sazonal (CNAE 2.0)(1416215)",
+      "csv_date_format": null,
+      "file_part": "NUCI_SA",
+      "source_desc": "CNI/FGV IBRE (CSV) - Nível de Utilização da Capacidade Instalada Com Ajuste Sazonal (Série: 1416215)"
+    }
+  }
+]

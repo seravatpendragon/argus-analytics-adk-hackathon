@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // Outras configurações que você possa ter podem vir aqui...
+        {
+            "name": "Python: Coletor Macro Principal (Módulo)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.data_collection.macroeconomic.main_macro_collector",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true // Ou false se precisar depurar bibliotecas de terceiros
+        }
+        // ... ou aqui
+    ]
+}

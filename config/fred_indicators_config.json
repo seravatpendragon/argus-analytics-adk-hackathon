@@ -1,0 +1,114 @@
+[
+  {
+    "indicator_config_id": "FRED_FEDFUNDS_EFFECTIVE_DAILY",
+    "enabled": true,
+    "source_api": "FRED", 
+    "data_category": "macro_international_interest_rate", 
+    "db_indicator_name": "FRED Federal Funds Effective Rate (Daily)", 
+    "db_indicator_type": "effective_interest_rate_central_bank", 
+    "db_indicator_frequency": "D", 
+    "db_indicator_unit": "%", 
+    "params": {
+      "series_id": "FEDFUNDS", 
+      "file_part": "FEDFUNDS_Effective_Daily", 
+      "source_desc": "FRED - Federal Funds Effective Rate, Daily",
+      "initial_history_start_date": "1954-07-01"
+    } 
+  },
+  {
+    "indicator_config_id": "FRED_DCOILWTICO_WTI_SPOT_DAILY",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "commodity_price_oil",
+    "db_indicator_name": "FRED WTI Crude Oil Spot Price (Daily)",
+    "db_indicator_type": "commodity_price_spot",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "USD_per_barrel",
+    "params": {
+      "series_id": "DCOILWTICO",
+      "file_part": "WTI_Spot_Daily",
+      "source_desc": "FRED - Crude Oil Prices: West Texas Intermediate (WTI) - Cushing, Oklahoma, Daily",
+      "initial_history_start_date": "1986-01-02"
+    }
+  },
+  {
+    "indicator_config_id": "FRED_DCOILBRENTEU_BRENT_SPOT_DAILY",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "commodity_price_oil",
+    "db_indicator_name": "FRED Brent Crude Oil Spot Price (Daily)",
+    "db_indicator_type": "commodity_price_spot",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "USD_per_barrel",
+    "params": {
+      "series_id": "DCOILBRENTEU",
+      "file_part": "Brent_Spot_Daily",
+      "source_desc": "FRED - Crude Oil Prices: Brent - Europe, Daily",
+      "initial_history_start_date": "1987-05-20"
+    }
+  },
+  {
+    "indicator_config_id": "FRED_OVXCLS_OIL_VOLATILITY_DAILY",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "market_volatility_commodity",
+    "db_indicator_name": "FRED CBOE Crude Oil ETF Volatility Index (OVX)",
+    "db_indicator_type": "market_volatility_index",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "points",
+    "params": {
+      "series_id": "OVXCLS",
+      "file_part": "OVX_Oil_Volatility_Daily",
+      "source_desc": "FRED - CBOE Crude Oil ETF Volatility Index, Daily",
+      "initial_history_start_date": "2007-05-10" 
+    }
+  },
+  {
+    "indicator_config_id": "FRED_DGS10_US_10YR_TREASURY_YIELD_DAILY",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "macro_international_yield",
+    "db_indicator_name": "FRED US 10-Year Treasury Constant Maturity Rate (Daily)",
+    "db_indicator_type": "government_bond_yield_10y",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "%",
+    "params": {
+      "series_id": "DGS10",
+      "file_part": "US_10Yr_Treasury_Yield_Daily",
+      "source_desc": "FRED - Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Daily",
+      "initial_history_start_date": "1962-01-02"
+    }
+  },
+  {
+    "indicator_config_id": "FRED_CPIAUCSL_US_CPI_MONTHLY_SA",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "macro_international_inflation",
+    "db_indicator_name": "FRED US CPI All Urban Consumers (SA, Monthly)",
+    "db_indicator_type": "inflation_index_consumer_seasonally_adjusted",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_1982-84=100", 
+    "params": {
+      "series_id": "CPIAUCSL", 
+      "file_part": "US_CPI_AllUrban_SA_Monthly",
+      "source_desc": "FRED - Consumer Price Index for All Urban Consumers: All Items in U.S. City Average, Seasonally Adjusted, Monthly",
+      "initial_history_start_date": "1947-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "FRED_DTWEXBGS_TRADE_WEIGHTED_USD_DAILY",
+    "enabled": true,
+    "source_api": "FRED",
+    "data_category": "macro_international_exchange_rate",
+    "db_indicator_name": "FRED Trade Weighted US Dollar Index: Broad, Goods and Services (Daily)",
+    "db_indicator_type": "exchange_rate_index_trade_weighted",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "index_2006=100", 
+    "params": {
+      "series_id": "DTWEXBGS", 
+      "file_part": "Trade_Weighted_USD_Index_Broad_Goods_Services_Daily",
+      "source_desc": "FRED - Trade Weighted U.S. Dollar Index: Broad, Goods and Services, Daily",
+      "initial_history_start_date": "2006-01-02" 
+    }
+  }
+]

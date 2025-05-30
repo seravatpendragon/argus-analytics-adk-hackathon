@@ -1,0 +1,586 @@
+{
+    "cfr.org": {
+        "source_name": "Council on Foreign Relations",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-05-29",
+        "notes": "Think tank focado em política externa e relações internacionais."
+    },
+    "piie.com": {
+        "source_name": "Peterson Institute for International Economics",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-05-29",
+        "notes": "Think tank focado em economia internacional."
+    },
+    "brookings.edu": {
+        "source_name": "Brookings",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-05-29",
+        "notes": "Think tank de políticas públicas."
+    },
+    "bruegel.org": {
+        "source_name": "Bruegel",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-05-29",
+        "notes": "Think tank europeu focado em economia."
+    },
+    "chathamhouse.org": {
+        "source_name": "Chatham House",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-05-29",
+        "notes": "Think tank britânico sobre assuntos internacionais."
+    },
+    "valor.globo.com": { 
+        "source_name": "Valor Econômico",
+        "overall_credibility_score": 0.96,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Principal jornal de economia e negócios do Brasil." 
+    },
+    "reuters.com": {
+        "source_name": "Reuters",
+        "overall_credibility_score": 0.96,
+        "craap_scores": {"currency": 1.0, "relevance": 0.9, "authority": 1.0, "accuracy": 1.0, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias internacional."
+    },
+    "dowjones.com": { 
+        "source_name": "Dow Jones Newswires",
+        "overall_credibility_score": 0.96,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Serviço de notícias financeiras. VERIFICAR DOMÍNIO específico do newswire."
+    },
+    "bloomberg.com": {
+        "source_name": "Bloomberg",
+        "overall_credibility_score": 0.96,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias financeiras global."
+    },
+    "ft.com": {
+        "source_name": "Financial Times",
+        "overall_credibility_score": 0.94,
+        "craap_scores": {"currency": 1.0, "relevance": 0.9, "authority": 1.0, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal de negócios internacional (Reino Unido)."
+    },
+    "eixos.com.br": { 
+        "source_name": "eixos", 
+        "overall_credibility_score": 0.92,
+        "craap_scores": {"currency": 1.0, "relevance": 0.9, "authority": 0.9, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Fonte de energia e petróleo"
+    },
+    "wsj.com": {
+        "source_name": "Wall Street Journal",
+        "overall_credibility_score": 0.92,
+        "craap_scores": {"currency": 1.0, "relevance": 0.9, "authority": 1.0, "accuracy": 0.9, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal de negócios americano."
+    },
+    "apnews.com": {
+        "source_name": "Associated Press",
+        "overall_credibility_score": 0.90,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 1.0, "accuracy": 0.9, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias cooperativa americana."
+    },
+    "eia.gov": {
+        "source_name": "EIA (Energy Info Admin)",
+        "overall_credibility_score": 0.90,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Administração de Informação de Energia dos EUA."
+    },
+    "iea.org": {
+        "source_name": "IEA (International Energy Agency)",
+        "overall_credibility_score": 0.90,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.9, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência Internacional de Energia."
+    },
+    "spglobal.com": { 
+        "source_name": "S&P Global Platts",
+        "overall_credibility_score": 0.88,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.9, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Fornecedor de informações sobre energia e commodities."
+    },
+    "economist.com": {
+        "source_name": "The Economist",
+        "overall_credibility_score": 0.88,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 1.0, "accuracy": 0.9, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista semanal britânica."
+    },
+    "valorinveste.globo.com": { 
+        "source_name": "Valor Investe",
+        "overall_credibility_score": 0.88,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 0.8, "accuracy": 0.8, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Plataforma de investimentos do Valor Econômico."
+    },
+    "bbc.com": { 
+        "source_name": "BBC News",
+        "overall_credibility_score": 0.86,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.9, "accuracy": 0.9, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Emissora pública do Reino Unido."
+    },
+    "nytimes.com": {
+        "source_name": "The New York Times",
+        "overall_credibility_score": 0.86,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.9, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal americano."
+    },
+    "infomoney.com.br": {
+        "source_name": "InfoMoney",
+        "overall_credibility_score": 0.86,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 0.8, "accuracy": 0.7, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias financeiras."
+    },
+    "moneytimes.com.br": {
+        "source_name": "Money Times",
+        "overall_credibility_score": 0.86,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 0.8, "accuracy": 0.7, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias financeiras."
+    },
+    "afp.com": {
+        "source_name": "AFP",
+        "overall_credibility_score": 0.86,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.8, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Agence France-Presse, agência de notícias francesa."
+    },
+    "washingtonpost.com": {
+        "source_name": "The Washington Post",
+        "overall_credibility_score": 0.84,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.9, "accuracy": 0.9, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal americano."
+    },
+    "agenciabrasil.ebc.com.br": {
+        "source_name": "Agência Brasil",
+        "overall_credibility_score": 0.84,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.8, "accuracy": 0.8, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias pública brasileira."
+    },
+    "agenciasebrae.com.br": { 
+        "source_name": "Agencia Sebrae",
+        "overall_credibility_score": 0.84,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.8, "accuracy": 0.8, "purpose": 0.9},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias do Sebrae."
+    },
+       "theguardian.com": {
+        "source_name": "The Guardian",
+        "overall_credibility_score": 0.84,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.9, "accuracy": 0.8, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal britânico."
+    },
+    "cnnbrasil.com.br": { 
+        "source_name": "CNN", 
+        "overall_credibility_score": 0.82,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.8, "accuracy": 0.8, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Canal de notícias. VERIFICAR DOMÍNIO (cnn.com para internacional)."
+    },
+    "g1.globo.com": {
+        "source_name": "G1 (Portal Globo)",
+        "overall_credibility_score": 0.82,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.9, "accuracy": 0.8, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias da Globo."
+    },
+    
+    "estadao.com.br": {
+        "source_name": "Estado de S. Paulo",
+        "overall_credibility_score": 0.82,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.8, "accuracy": 0.7, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Importante jornal brasileiro."
+    },
+    "folha.uol.com.br": { 
+        "source_name": "Folha de S.Paulo",
+        "overall_credibility_score": 0.82,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.9, "accuracy": 0.8, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Importante jornal brasileiro."
+    },
+    "bnamericas.com": {
+        "source_name": "BNamericas",
+        "overall_credibility_score": 0.80,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.8, "accuracy": 0.8, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Plataforma de inteligência de negócios focada na América Latina."
+    },
+    "oglobo.globo.com": {
+        "source_name": "O Globo",
+        "overall_credibility_score": 0.80,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.9, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Importante jornal brasileiro."
+    },
+    "aljazeera.com": {
+        "source_name": "Al Jazeera",
+        "overall_credibility_score": 0.78,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.8, "accuracy": 0.8, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Rede de notícias internacional sediada no Catar."
+    },
+    "investidor10.com.br": {
+        "source_name": "Investidor10",
+        "overall_credibility_score": 0.78,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.7, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Site sobre investimentos."
+    },
+    "monitormercantil.com.br": {
+        "source_name": "Monitor Mercantil",
+        "overall_credibility_score": 0.78,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.8, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal de economia e finanças."
+    },
+    "seudinheiro.com": {
+        "source_name": "Seu Dinheiro",
+        "overall_credibility_score": 0.78,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.7, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Site de notícias financeiras."
+    },
+    "br.investing.com": { 
+        "source_name": "Investing.com",
+        "overall_credibility_score": 0.78,
+        "craap_scores": {"currency": 1.0, "relevance": 0.8, "authority": 0.7, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Plataforma de mercados financeiros."
+    },
+    "noticias.uol.com.br": {
+        "source_name": "UOL Notícias",
+        "overall_credibility_score": 0.76,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.8, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias UOL."
+    },
+    "jota.info": {
+        "source_name": "JOTA",
+        "overall_credibility_score": 0.76,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.8, "accuracy": 0.9, "purpose": 0.8},
+        "assessment_date": "2025-05-29",
+        "notes": "Informação e análise sobre o Judiciário e o Legislativo."
+    },
+    "forbes.com.br": { 
+        "source_name": "Forbes",
+        "overall_credibility_score": 0.76,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista de negócios e finanças."
+    },
+    "fortune.com": {
+        "source_name": "Fortune",
+        "overall_credibility_score": 0.76,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista de negócios global."
+    },
+    "gauchazh.clicrbs.com.br": { 
+        "source_name": "GZH",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias do Rio Grande do Sul."
+    },
+    "ndmais.com.br": { 
+        "source_name": "ND Mais",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias de Santa Catarina (Grupo ND)."
+    },
+    "nsctotal.com.br": { 
+        "source_name": "NSC Total",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias de Santa Catarina (NSC Comunicação)."
+    },
+    "npr.org": {
+        "source_name": "NPR",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.8, "accuracy": 0.8, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "National Public Radio, organização de mídia pública americana."
+    },
+    "poder360.com.br": {
+        "source_name": "Poder360",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.7, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Site de notícias focado em política e poder."
+    },
+    "oilprice.com": {
+        "source_name": "Oil Price",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.7, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Notícias e análises sobre o mercado de energia e petróleo."
+    },
+    "efe.com": { 
+        "source_name": "Agencia EFE",
+        "overall_credibility_score": 0.74,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.7, "accuracy": 0.7, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Agência de notícias espanhola."
+    },
+    "jornalmetropolitanorio.com.br": {
+        "source_name": "Jornal Metropolitano",
+        "overall_credibility_score": 0.72,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.7, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "VERIFICAR DOMÍNIO E ABRANGÊNCIA GEOGRÁFICA."
+    },
+    "jornalcontabil.com.br": {
+        "source_name": "Jornal Contábil",
+        "overall_credibility_score": 0.72,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.8, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Notícias e informações sobre contabilidade."
+    },
+    "crusoe.com.br": { 
+        "source_name": "Crusoé",
+        "overall_credibility_score": 0.72,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.7, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista digital."
+    },
+    "conjur.com.br": {
+        "source_name": "ConJur",
+        "overall_credibility_score": 0.72,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.7, "accuracy": 0.8, "purpose": 0.7},
+        "assessment_date": "2025-05-29",
+        "notes": "Consultor Jurídico, notícias e informações do meio jurídico."
+    },
+    "businessinsider.com": { 
+        "source_name": "Business Insider",
+        "overall_credibility_score": 0.72,
+        "craap_scores": {"currency": 1.0, "relevance": 0.7, "authority": 0.7, "accuracy": 0.7, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Site de notícias de negócios e tecnologia. VERIFICAR DOMÍNIO REGIONAL."
+    },
+    "folhape.com.br": { 
+        "source_name": "Folha PE",
+        "overall_credibility_score": 0.70,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal de Pernambuco."
+    },
+    "epoca.globo.com": {
+        "source_name": "Época",
+        "overall_credibility_score": 0.68,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.7, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista semanal brasileira. VERIFICAR DOMÍNIO ATUAL."
+    },
+    "folhadecuritiba.com.br": { 
+        "source_name": "Folha de Curitiba",
+        "overall_credibility_score": 0.68,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal de Curitiba. VERIFICAR DOMÍNIO."
+    },
+    "r7.com": {
+        "source_name": "R7 Notícias",
+        "overall_credibility_score": 0.68,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias da Record."
+    },
+    "news.yahoo.com": {
+        "source_name": "Yahoo Notícias",
+        "overall_credibility_score": 0.68,
+        "craap_scores": {"currency": 0.9, "relevance": 0.6, "authority": 0.6, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias Yahoo."
+    },
+    "msn.com": { 
+        "source_name": "MSN Notícias (Brasil)",
+        "overall_credibility_score": 0.68,
+        "craap_scores": {"currency": 0.9, "relevance": 0.6, "authority": 0.6, "accuracy": 0.7, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias MSN. Domínio pode ser mais específico para o Brasil dependendo da URL real."
+    },
+    "agorarn.com.br": {
+        "source_name": "Agora RN",
+        "overall_credibility_score": 0.66,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal do Rio Grande do Norte."
+    },
+    "politico.com": {
+        "source_name": "Politico",
+        "overall_credibility_score": 0.66,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.7, "accuracy": 0.7, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Site de notícias políticas (EUA)."
+    },
+    "folhavitoria.com.br": { 
+        "source_name": "Folha Vitória",
+        "overall_credibility_score": 0.66,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.7, "accuracy": 0.6, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias do Espírito Santo."
+    },
+    "cartacapital.com.br": { 
+        "source_name": "Carta Capital", 
+        "overall_credibility_score": 0.66,
+        "craap_scores": {"currency": 1.0, "relevance": 0.6, "authority": 0.7, "accuracy": 0.6, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista semanal brasileira. Sua lista tem outra entrada para 'CartaCapital' com score 0.60, verifique se são a mesma fonte com avaliações diferentes ou se são domínios/entidades distintas."
+    },
+    "informaaraguaia.com.br": {
+        "source_name": "Informa Araguaia",
+        "overall_credibility_score": 0.64,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias da região do Araguaia. VERIFICAR DOMÍNIO."
+    },
+    "brasilemfolhas.com.br": { 
+        "source_name": "Brasil em Folhas",
+        "overall_credibility_score": 0.64,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "VERIFICAR DOMÍNIO."
+    },
+    "istoe.com.br": {
+        "source_name": "IstoÉ",
+        "overall_credibility_score": 0.64,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista semanal brasileira. VERIFICAR se é a geral ou a de dinheiro."
+    },
+    "msnbc.com": { 
+        "source_name": "MSNBC",
+        "overall_credibility_score": 0.64,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.7, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Canal de notícias a cabo americano."
+    },
+    "jornalgrandebahia.com.br": { 
+        "source_name": "Jornal Grande Bahia",
+        "overall_credibility_score": 0.62,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.5, "accuracy": 0.6, "purpose": 0.6},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias da Bahia."
+    },
+    "veja.abril.com.br": { 
+        "source_name": "Veja",
+        "overall_credibility_score": 0.62,
+        "craap_scores": {"currency": 1.0, "relevance": 0.5, "authority": 0.7, "accuracy": 0.6, "purpose": 0.3},
+        "assessment_date": "2025-05-29",
+        "notes": "Revista semanal brasileira."
+    },
+    "gazetadopovo.com.br": {
+        "source_name": "Gazeta do Povo",
+        "overall_credibility_score": 0.60,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal do Paraná."
+    },
+    "opovo.com.br": { 
+        "source_name": "O Povo",
+        "overall_credibility_score": 0.60,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal do Ceará."
+    },
+    "www.clicrbs.com.br": {
+        "source_name": "clic rbs",
+        "overall_credibility_score": 0.60,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Jornal do Rio Grande do Sul."
+    },
+    "blogdobg.com.br": { 
+        "source_name": "Blog do BG",
+        "overall_credibility_score": 0.60,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.5, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Blog de notícias. VERIFICAR DOMÍNIO E FOCO."
+    },
+    "blogdomagno.com.br": { 
+        "source_name": "Blog do Magno",
+        "overall_credibility_score": 0.60,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.5, "accuracy": 0.6, "purpose": 0.5},
+        "assessment_date": "2025-05-29",
+        "notes": "Blog de notícias. VERIFICAR DOMÍNIO E FOCO."
+    },
+    "foxnews.com": {
+        "source_name": "Fox News",
+        "overall_credibility_score": 0.56,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.6, "accuracy": 0.5, "purpose": 0.3},
+        "assessment_date": "2025-05-29",
+        "notes": "Canal de notícias a cabo americano com viés conservador."
+    },
+    "robsonpiresxerife.com": { 
+        "source_name": "Robson Pires",
+        "overall_credibility_score": 0.54,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.4, "accuracy": 0.5, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "Blog de notícias. VERIFICAR DOMÍNIO."
+    },
+    "santaportal.com.br": { 
+        "source_name": "Santa Portal",
+        "overall_credibility_score": 0.54,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.4, "accuracy": 0.5, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias. VERIFICAR DOMÍNIO."
+    },
+    "setelagoas.com.br": { 
+        "source_name": "Sete Lagoas Notícias",
+        "overall_credibility_score": 0.52,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.4, "accuracy": 0.5, "purpose": 0.4},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal de notícias de Sete Lagoas. VERIFICAR DOMÍNIO."
+    },
+    "contrafatos.com.br": { 
+        "source_name": "ContraFatos",
+        "overall_credibility_score": 0.52,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.4, "accuracy": 0.5, "purpose": 0.3},
+        "assessment_date": "2025-05-29",
+        "notes": "VERIFICAR DOMÍNIO."
+    },
+    "tvfoco.com.br": {
+        "source_name": "TV Foco",
+        "overall_credibility_score": 0.50,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.4, "accuracy": 0.5, "purpose": 0.3},
+        "assessment_date": "2025-05-29",
+        "notes": "Site de notícias sobre entretenimento e TV."
+    },
+
+    "brasil247.com": {
+        "source_name": "Brasil 247",
+        "overall_credibility_score": 0.46,
+        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.3, "accuracy": 0.3, "purpose": 0.3},
+        "assessment_date": "2025-05-29",
+        "notes": "Conteúdo com viés político acentuado."
+    },
+    "oantagonista.com": { 
+        "source_name": "O Antagonista",
+        "overall_credibility_score": 0.34,
+        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.2, "accuracy": 0.1, "purpose": 0.1},
+        "assessment_date": "2025-05-29",
+        "notes": "Portal com forte viés opinativo e político."
+    }
+}
+

@@ -1,0 +1,108 @@
+{
+    "newsapi": {
+        "base_url": "https://newsapi.org/v2/everything",
+        "queries": [
+            {
+                "query_name": "Petrobras Geral (NewsAPI)",
+                "params": {
+                    "q": "Petrobras OR PETR4",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 20
+                },
+                "target_company_ticker": "PETR4.SA",
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "Setor O&G Brasil (NewsAPI)",
+                "params": {
+                    "q": "(\"setor de petróleo\" OR \"óleo e gás\") AND Brasil NOT Petrobras NOT PETR4",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 10
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "Politica Energetica Brasil (NewsAPI)",
+                "params": {
+                    "q": "\"política energética\" AND Brasil AND (petróleo OR combustíveis)",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 5
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "ANP Regulacao Petroleo (NewsAPI)",
+                "params": {
+                    "q": "ANP AND (regulação OR leilão OR resolução) AND (petróleo OR gás)",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 5
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição" 
+            },
+            {
+                "query_name": "Concorrentes O&G Brasil (NewsAPI)",
+                "params": {
+                    "q": "(Prio OR PRIO3 OR \"3R Petroleum\" OR RRRP3 OR Enauta OR ENAT3) AND Brasil",
+                    "language": "pt",
+                    "sortBy": "relevancy", 
+                    "pageSize": 10 
+                },
+                "target_company_ticker": null, 
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "OPEP e OPEP+ (NewsAPI)",
+                "params": {
+                    "q": "OPEC OR OPEP OR OPEC+ OR OPEP+ AND (produção OR cota OR reunião OR decisão)",
+                    "language": "en", 
+                    "sortBy": "publishedAt",
+                    "pageSize": 10
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição" 
+            },
+            {
+                "query_name": "IEA AIE Relatorios (NewsAPI)",
+                "params": {
+                    "q": "\"Agência Internacional de Energia\" OR IEA OR AIE AND (relatório OR previsão OR outlook OR demanda OR oferta) AND petróleo",
+                    "language": "en",
+                    "sortBy": "publishedAt",
+                    "pageSize": 5
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "Transição Energética O&G (NewsAPI)",
+                "params": {
+                    "q": "(\"transição energética\" OR ESG OR renováveis OR descarbonização) AND (\"setor de petróleo\" OR \"óleo e gás\" OR Petrobras)",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 10
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            },
+            {
+                "query_name": "ANP Regulacao Petroleo (NewsAPI)",
+                "params": {
+                    "q": "ANP AND (regulação OR leilão OR resolução OR norma) AND (petróleo OR gás OR combustíveis)",
+                    "language": "pt",
+                    "sortBy": "publishedAt",
+                    "pageSize": 5
+                },
+                "target_company_ticker": null,
+                "target_segment_name": "Exploração, Refino e Distribuição"
+            }
+
+        ]
+    }
+
+}

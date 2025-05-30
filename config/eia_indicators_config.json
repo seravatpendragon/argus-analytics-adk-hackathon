@@ -1,0 +1,182 @@
+[
+  {
+    "indicator_config_id": "EIA_BRENT_PRICE_DAILY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_price_oil",
+    "db_indicator_name": "EIA Preço Petróleo Brent Spot (Diário)",
+    "db_indicator_type": "commodity_price_spot",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "USD_per_barrel",
+    "params": {
+      "api_route": "/petroleum/pri/spt/",
+      "facet_series_id": "RBRTE", 
+      "frequency_param_api": "daily", 
+      "file_part": "EIA_Brent_Daily",
+      "source_desc": "EIA API - Europe Brent Spot Price FOB, Daily",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_WTI_PRICE_DAILY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_price_oil",
+    "db_indicator_name": "EIA Preço Petróleo WTI Spot (Diário)",
+    "db_indicator_type": "commodity_price_spot",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "USD_per_barrel",
+    "params": {
+      "api_route": "/petroleum/pri/spt/",
+      "facet_series_id": "RWTC",
+      "frequency_param_api": "daily",
+      "file_part": "EIA_WTI_Daily",
+      "source_desc": "EIA API - Cushing, OK WTI Spot Price FOB, Daily",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_NATGAS_HH_FUTURES_DAILY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_price_gas",
+    "db_indicator_name": "EIA Preço Gás Natural Henry Hub (Futuros, Diário)",
+    "db_indicator_type": "commodity_price_futures",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "USD_per_million_btu",
+    "params": {
+      "api_route": "/natural-gas/pri/fut/", 
+      "facet_series_id": "RNGC1", 
+      "frequency_param_api": "daily",
+      "file_part": "EIA_NatGas_HH_Fut_Daily",
+      "source_desc": "EIA API - Henry Hub Natural Gas Futures Contract 1, Daily",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_CRUDE_STOCKS_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_inventory_crude",
+    "db_indicator_name": "EIA Estoques Petróleo EUA (Excl. SPR, Semanal)",
+    "db_indicator_type": "inventory_level",
+    "db_indicator_frequency": "W", 
+    "db_indicator_unit": "thousand_barrels",
+    "params": {
+      "api_route": "/petroleum/sum/sndw/", 
+      "facet_series_id": "WCESTUS1",
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Crude_Stocks_W",
+      "source_desc": "EIA API - U.S. Ending Stocks of Crude Oil, Excluding SPR, Weekly",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_GASOLINE_STOCKS_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_inventory_refined_product",
+    "db_indicator_name": "EIA Estoques Gasolina EUA (Total, Semanal)",
+    "db_indicator_type": "inventory_level",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "thousand_barrels",
+    "params": {
+      "api_route": "/petroleum/sum/sndw/",
+      "facet_series_id": "wgfupus2", 
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Gasoline_Stocks_W",
+      "source_desc": "EIA API - Weekly U.S. Ending Stocks of Total Gasoline",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_DISTILLATE_STOCKS_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_inventory_refined_product",
+    "db_indicator_name": "EIA Estoques Destilados EUA (Total, Semanal)",
+    "db_indicator_type": "inventory_level",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "thousand_barrels",
+    "params": {
+      "api_route": "/petroleum/sum/sndw/",
+      "facet_series_id": "WDISTUS1", 
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Distillate_Stocks_W",
+      "source_desc": "EIA API - Weekly U.S. Ending Stocks of Distillate Fuel Oil",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_GASOLINE_SUPPLIED_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_demand_refined_product",
+    "db_indicator_name": "EIA Produto Fornecido Gasolina EUA (Semanal)",
+    "db_indicator_type": "product_supplied_demand_proxy",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "thousand_barrels_per_day",
+    "params": {
+      "api_route": "/petroleum/cons/wpsup/", 
+      "facet_series_id": "WGFUPUS2", 
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Gasoline_Supplied_W",
+      "source_desc": "EIA API - Weekly U.S. Product Supplied of Finished Motor Gasoline",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_DISTILLATE_SUPPLIED_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_demand_refined_product",
+    "db_indicator_name": "EIA Produto Fornecido Destilados EUA (Semanal)",
+    "db_indicator_type": "product_supplied_demand_proxy",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "thousand_barrels_per_day",
+    "params": {
+      "api_route": "/petroleum/cons/wpsup/",
+      "facet_series_id": "WDIUPUS2",
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Distillate_Supplied_W",
+      "source_desc": "EIA API - Weekly U.S. Product Supplied of Distillate Fuel Oil",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_CRUDE_PRODUCTION_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "commodity_production_crude",
+    "db_indicator_name": "EIA Produção Petróleo Bruto EUA (Semanal)",
+    "db_indicator_type": "production_level",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "thousand_barrels_per_day",
+    "params": {
+      "api_route": "/petroleum/sum/sndw/",
+      "facet_series_id": "WCRFPUS2",
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Crude_Production_W",
+      "source_desc": "EIA API - Weekly U.S. Field Production of Crude Oil",
+      "initial_history_start_date": "2000-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "EIA_US_REFINERY_UTILIZATION_WEEKLY",
+    "enabled": true,
+    "source_api": "EIA",
+    "data_category": "industry_refinery_utilization",
+    "db_indicator_name": "EIA Utilização Capacidade Refinarias EUA (Semanal)",
+    "db_indicator_type": "capacity_utilization_rate",
+    "db_indicator_frequency": "W",
+    "db_indicator_unit": "%",
+    "params": {
+      "api_route": "/petroleum/pnp/wiup/", 
+      "facet_series_id": "WPULEUS3", 
+      "frequency_param_api": "weekly",
+      "file_part": "EIA_US_Refinery_Utilization_W",
+      "source_desc": "EIA API - Weekly U.S. Percent Utilization of Refinery Operable Capacity",
+      "initial_history_start_date": "2000-01-01"
+    }
+  }
+]

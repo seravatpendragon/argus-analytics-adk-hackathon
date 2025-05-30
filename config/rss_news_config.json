@@ -1,0 +1,931 @@
+[
+    {
+        "source_name": "\"Crescimento econômico global\" OR \"PIB mundial\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1895045931307871935",
+        "category": "Google Alert - Econômico Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Inflação global\" OR \"Inflação EUA\" OR \"Inflação Zona do Euro\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9603365965967489079",
+        "category": "Google Alert - Econômico Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"ECB monetary policy\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/3951504844278699928",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": " \"Petrobras\"+\"OPEP\" ",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/17441903417636460189",
+        "category": "Google Alert - Específico PETR4 e OPEP",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"AIE\" OR \"IEA\" OR \"Agência Internacional de Energia\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15597407239355459888",
+        "category": "Google Alert - Setor Energia Global",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Análise PETR4\" OR \"Recomendação PETR4\" OR \"Preço-alvo PETR4\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9428863897715677130",
+        "category": "Google Alert - Análise Específica PETR4",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"ANP\" OR \"Agência Nacional do Petróleo\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4538288854281980274",
+        "category": "Google Alert - Regulatório Setor O&G Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Arcabouço Fiscal\" OR \"Teto de Gastos\" + regras OR cumprimento OR discussão",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15583814953097882724",
+        "category": "Google Alert - Fiscal Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Arrecadação federal\" + \"Receita Federal\" OR resultado",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/14208153531660732715",
+        "category": "Google Alert - Fiscal Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"ataque cibernético\" + \"grande empresa\" OR \"setor financeiro\" Brasil",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10744701319442700038",
+        "category": "Google Alert - Risco Cibernético Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"aversão ao risco global\" OR \"risk-off\" + mercados emergentes OR Brasil",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13768757021925568263",
+        "category": "Google Alert - Mercados Globais e Risco",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"B3\" + \"divulgação de dados\" OR \"mudança API\" OR \"especificações técnicas\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/16093803516359090320",
+        "category": "Google Alert - B3 e Mercado Capitais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Balança comercial\" + resultado OR MDIC OR saldo",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8125855588120327878",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Banco Central do Brasil\" + comunicado OR norma OR \"regulação mercado financeiro\" OR \"política monetária\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1057475552390676045",
+        "category": "Google Alert - Política Monetária Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Banco Central Europeu\" OR \"BCE\" + \"taxa de juros\" OR comunicado OR \"política monetária\" OR \"discurso Lagarde\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5916259877639496221",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Bank of England\" + \"taxa de juros\" OR \"política monetária\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12242431940228837116",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"BoE monetary policy\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5344827252123496173",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Boletim Focus Banco Central\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/2511759369228783980",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"bolhas financeiras\" + Brasil OR global",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/239881935790887192",
+        "category": "Google Alert - Risco Mercados Financeiros",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Brasil no BRICS\" AND (estratégia OR prioridades OR discurso OR política externa)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9185602651254071844",
+        "category": "Google Alert - Geopolítico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Câmbio Dólar Real\" OR \"PTAX\" + perspectiva OR cotação OR volatilidade OR \"fluxo cambial\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8125855588120327278",
+        "category": "Google Alert - Mercados Financeiros Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"comércio Brasil BRICS\" OR \"investimento BRICS no Brasil\" OR \"acordos bilaterais Brasil BRICS\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8619418748055615236",
+        "category": "Google Alert - Geopolítico/Comércio Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Concessão de crédito\" + \"Banco Central\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6949526579488447622",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Confiança da indústria\" + FGV OR CNI OR índice",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9111494153549982932",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Confiança de serviços\" + FGV OR CNC OR índice",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/3499660621349928277",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Confiança do consumidor\" + FGV OR CNC OR índice",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/2673392289491295583",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"crise hídrica Brasil\" OR \"apagão Brasil\" + impacto energia OR agricultura OR indústria",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/17673876001923078569",
+        "category": "Google Alert - Risco Ambiental/Energia Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null 
+    },
+    {
+        "source_name": "\"CVM Audiência\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/7092368259187274893",
+        "category": "Google Alert - Regulatório Mercado Capitais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"CVM dados\" + atualização OR \"novas regras\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15267126927697408663",
+        "category": "Google Alert - Regulatório Mercado Capitais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"CVM\" + instrução OR norma OR \"consulta pública\" OR decisão OR \"proteção investidor\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/17451171022425597186",
+        "category": "Google Alert - Regulatório Mercado Capitais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Demanda global petróleo\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6306942304860991800",
+        "category": "Google Alert - Setor O&G Global",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"desastre ambiental\" + impacto econômico OR empresas OR agronegócio",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/17673876001923079591",
+        "category": "Google Alert - Risco Ambiental/Econômico",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"desastre natural\" + impacto econômico global OR Brasil",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9279453700562745547",
+        "category": "Google Alert - Risco Ambiental/Econômico",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Dívida pública\" + \"Tesouro Nacional\" OR resultado",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13399371552073022708",
+        "category": "Google Alert - Fiscal Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"ECB monetary policy\" (2)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9355162333828576307",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Eleições\" + impacto econômico OR propostas",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10963467990447576661",
+        "category": "Google Alert - Política/Econômia Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Estoques de petróleo\" + EUA OR \"Estados Unidos\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/3778199217151502846",
+        "category": "Google Alert - Setor O&G Global",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"EWZ\" + cotação OR análise",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/7939789367563639160",
+        "category": "Google Alert - Mercados Financeiros Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Federal Reserve\" OR \"FED\" + \"taxa de juros\" OR comunicado OR \"política monetária\" OR \"discurso Powell\" OR FOMC",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/17440176048460295579",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"FGV IBRE\" + dados + atualização OR metodologia OR \"novo indicador\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1779331487948878149",
+        "category": "Google Alert - Indicadores Econômicos Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"FOMC decision\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15938202397378945861",
+        "category": "Google Alert - Política Monetária Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"fuga de capitais\" OR \"saída de investimento estrangeiro Brasil\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4444226413193084744",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Greve Petrobras\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/14450321985916836175",
+        "category": "Google Alert - Específico PETR4",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"IGP-M\" + divulgação OR resultado OR FGV OR projeção",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8744102686908350797",
+        "category": "Google Alert - Indicadores Econômicos Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Inadimplência\" + \"Banco Central\" OR empresas OR \"pessoas físicas\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6949526579488446988",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"incerteza econômica\" + perspectivas OR projeções",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15264638405914011878",
+        "category": "Google Alert - Econômico Geral",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"índice VIX\" + notícias OR análise OR volatilidade global",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/445027441853882598",
+        "category": "Google Alert - Mercados Financeiros Globais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"IPCA\" + divulgação OR resultado OR IBGE OR projeção",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/14009574489546157423",
+        "category": "Google Alert - Indicadores Econômicos Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Leilão petróleo ANP\" OR \"Leilão pré-sal\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8658614967291308256",
+        "category": "Google Alert - Setor O&G Brasil",
+        "target_company_ticker": null, 
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Lobby petróleo\" ",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6222118189395670109",
+        "category": "Google Alert - Setor O&G Política",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Ministério da Fazenda\" OR \"Ministério da Economia\" + \"medidas econômicas\" OR anúncio OR plano",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4524865513489422558",
+        "category": "Google Alert - Política Econômica Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"nova pandemia\" OR \"OMS alerta pandemia\" OR \"emergência sanitária global\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5722002489050680683",
+        "category": "Google Alert - Risco Saúde Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"OMC\" OR \"Organização Mundial do Comércio\" + Brasil OR decisões",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1436048474327194771",
+        "category": "Google Alert - Comércio Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras acionistas\" OR \"Petrobras assembleia acionistas\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8929368502671864342",
+        "category": "Google Alert - Específico PETR4 Governança",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras conselho de administração\" OR \"Petrobras eleição conselho\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10762821644095905842",
+        "category": "Google Alert - Específico PETR4 Governança",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras descomissionamento\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9348219145624772203",
+        "category": "Google Alert - Específico PETR4 Operacional",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras desinvestimento\" OR \"Petrobras venda ativos\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/7481393629683015888",
+        "category": "Google Alert - Específico PETR4 Estratégia",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras dividendos\" OR \"Petrobras política de dividendos\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13014081796456914566",
+        "category": "Google Alert - Específico PETR4 Financeiro",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras endividamento\" OR \"Petrobras dívida\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1591416100131228795",
+        "category": "Google Alert - Específico PETR4 Financeiro",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras ESG\" OR \"Petrobras sustentabilidade\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15864669529214669678",
+        "category": "Google Alert - Específico PETR4 ESG",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras fato relevante\" OR \"Petrobras comunicado\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8396073457627175722",
+        "category": "Google Alert - Específico PETR4 Comunicados",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras gás natural\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10479517004537746365",
+        "category": "Google Alert - Específico PETR4 Gás",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Petrobras Magda Chambriard\" ",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10865508750611594164",
+        "category": "Google Alert - Específico PETR4 Liderança",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras plano de investimento\" OR \"Petrobras CAPEX\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15195427317631789478",
+        "category": "Google Alert - Específico PETR4 Estratégia",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras produção petróleo\" OR \"Petrobras exploração pré-sal\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8286060588733739458",
+        "category": "Google Alert - Específico PETR4 Produção",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Petrobras rating\" OR \"Petrobras classificação de risco\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6369858752022258635",
+        "category": "Google Alert - Específico PETR4 Financeiro",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras refino\" OR \"Petrobras refinarias\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/2929705653821420132",
+        "category": "Google Alert - Específico PETR4 Refino",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": "Exploração, Refino e Distribuição" 
+    },
+    {
+        "source_name": "\"Petrobras resultados trimestrais\" OR \"Petrobras balanço financeiro\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12862061346338602940",
+        "category": "Google Alert - Específico PETR4 Resultados",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras RI\" OR \"Petrobras relações com investidores\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5063207045752598544",
+        "category": "Google Alert - Específico PETR4 RI",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras segurança operacional\" OR \"Petrobras acidente plataforma\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4218159842789994000",
+        "category": "Google Alert - Específico PETR4 Segurança",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras tecnologia\" OR \"Petrobras inovação\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15864669529214670106",
+        "category": "Google Alert - Específico PETR4 Tecnologia",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras transição energética\" OR \"Petrobras renováveis\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4376567285138413674",
+        "category": "Google Alert - Específico PETR4 Transição Energética",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Petrobras\" + \"3R Petroleum\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13198626395155929697",
+        "category": "Google Alert - PETR4 e 3R Petroleum",
+        "target_company_ticker": "PETR4.SA", 
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Petrobras\"+ \"Prio\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/11434403357489968956",
+        "category": "Google Alert - PETR4 e Prio",
+        "target_company_ticker": "PETR4.SA", 
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"petróleo Brent\" OR \"preço petróleo WTI\" + tendência OR previsão OR OPEP OR \"choque de oferta\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4798564188545655481",
+        "category": "Google Alert - Preço Petróleo Global",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"PIB Brasil\" + divulgação OR resultado OR IBGE",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8125855588120326301",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Produção petróleo\" + EUA + xisto",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/841057780475593420",
+        "category": "Google Alert - Setor O&G Global",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"protecionismo\" + impacto comércio Brasil OR exportações",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5328354212302687021",
+        "category": "Google Alert - Comércio Global/Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"python-bcb\" + atualização OR bug OR vulnerabilidade OR release",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/18250058161014922851",
+        "category": "Google Alert - Ferramentas/Tecnologia BCB",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Reforma Tributária\" + impacto OR aprovação OR novidades OR Senado OR Câmara",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/14225143448702990676",
+        "category": "Google Alert - Fiscal/Política Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Regulação petróleo\" OR \"Lei do Petróleo\" + Brasil",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4223667551703334033",
+        "category": "Google Alert - Regulatório Setor O&G Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Resultado primário\" OR \"Resultado nominal\" + governo",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1096560050576721920",
+        "category": "Google Alert - Fiscal Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"risco financeiro global\" OR \"crise bancária global\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8001673657639982360",
+        "category": "Google Alert - Risco Mercados Globais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Royalties petróleo\" + \"Brasil\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12286842221541979102",
+        "category": "Google Alert - Fiscal/Setor O&G Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição"
+    },
+    {
+        "source_name": "\"Segurança jurídica\" + investimento",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8942909294480878997",
+        "category": "Google Alert - Ambiente de Negócios Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"sentimento do investidor\" + Brasil OR B3",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/1267326466699536952",
+        "category": "Google Alert - Mercados Financeiros Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"SIDRA IBGE\" + atualização OR mudança OR problema OR \"nova versão\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/11130204624894009193",
+        "category": "Google Alert - Fontes de Dados IBGE",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"sidrapy\" + atualização OR bug OR vulnerabilidade OR release",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/2118317373023053345",
+        "category": "Google Alert - Ferramentas/Tecnologia IBGE",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"superciclo de commodities\" + análise OR impacto Brasil",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/7551765296163664573",
+        "category": "Google Alert - Commodities Globais/Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null 
+    },
+    {
+        "source_name": "\"Taxa de desemprego Brasil\" OR \"PNAD Contínua\" + divulgação OR IBGE",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8125855588120327930",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Taxa Selic\" + COPOM OR decisão OR \"Banco Central\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/5795938541840758368",
+        "category": "Google Alert - Política Monetária Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "\"Volatilidade petrobras\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/7557839795209454102",
+        "category": "Google Alert - Específico PETR4 Mercado",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null
+    },
+    {
+        "source_name": "(\"conflito militar\" OR \"conflito armado\" OR \"início de guerra\" OR \"crise diplomática severa\") AND (\"impacto econômico global\" OR \"impacto mercados emergentes\" OR \"risco geopolítico global\" OR \"preço commodities\")",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/18104628512445680357",
+        "category": "Google Alert - Risco Geopolítico Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "(\"conflito Oriente Médio\" OR \"tensão Israel Palestina\" OR \"crise Golfo Pérsico\" OR \"tensão Irã\") AND (\"impacto econômico global\" OR \"impacto Brasil\" OR \"preço petróleo\" OR \"risco geopolítico\" OR OPEP)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12416137024965554929",
+        "category": "Google Alert - Risco Geopolítico Oriente Médio",
+        "target_company_ticker": null,
+        "target_segment_name": "Exploração, Refino e Distribuição" 
+    },
+    {
+        "source_name": "(\"guerra Ucrânia\" OR \"conflito Rússia Ucrânia\" OR \"tensão Leste Europeu\") AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/6162810593662843675",
+        "category": "Google Alert - Risco Geopolítico Leste Europeu",
+        "target_company_ticker": null,
+        "target_segment_name": null 
+    },
+    {
+        "source_name": "(\"Península Coreana\" OR \"Coreia do Norte\" OR \"Coreia do Norte míssil\") AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12965490054589611909",
+        "category": "Google Alert - Risco Geopolítico Ásia",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "(\"preço açúcar internacional\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12753022978128585206",
+        "category": "Google Alert - Commodities Agrícolas (Açúcar)",
+        "target_company_ticker": null,
+        "target_segment_name": "Agricultura"
+    },
+    {
+        "source_name": "(\"preço alumínio internacional\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/3198607588617890669",
+        "category": "Google Alert - Commodities Metálicas (Alumínio)",
+        "target_company_ticker": null,
+        "target_segment_name": "Minerais Metálicos" 
+    },
+    {
+        "source_name": "(\"preço café arábica\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/12753022978128587218",
+        "category": "Google Alert - Commodities Agrícolas (Café)",
+        "target_company_ticker": null,
+        "target_segment_name": "Agricultura"
+    },
+    {
+        "source_name": "(\"preço celulose BHKP China\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/18096360180017560505",
+        "category": "Google Alert - Commodities (Celulose)",
+        "target_company_ticker": null,
+        "target_segment_name": "Papel e Celulose"
+    },
+    {
+        "source_name": "(\"preço cobre internacional\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/8485723682770972356",
+        "category": "Google Alert - Commodities Metálicas (Cobre)",
+        "target_company_ticker": null,
+        "target_segment_name": "Minerais Metálicos"
+    },
+    {
+        "source_name": "(\"preço milho internacional\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13013416568374882751",
+        "category": "Google Alert - Commodities Agrícolas (Milho)",
+        "target_company_ticker": null,
+        "target_segment_name": "Agricultura"
+    },
+    {
+        "source_name": "(\"preço soja internacional\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/13013416568374885404",
+        "category": "Google Alert - Commodities Agrícolas (Soja)",
+        "target_company_ticker": null,
+        "target_segment_name": "Agricultura"
+    },
+    {
+        "source_name": "(\"tarifas EUA China\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/16459163514643414925",
+        "category": "Google Alert - Geopolítico/Comércio Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "(\"tensão China Taiwan\" OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4395156166001755036",
+        "category": "Google Alert - Risco Geopolítico Ásia",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "(USTR + China OR ...) AND (...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/15538089776942949103",
+        "category": "Google Alert - Geopolítico/Comércio Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "BRICS AND (cúpula OR ...)",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/11442279515503214252",
+        "category": "Google Alert - Geopolítico BRICS",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "Confiança do comércio Brasil\" + FGV OR CNC OR índice",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/254339411822770064",
+        "category": "Google Alert - Econômico Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "preço + \"minério de ferro\" + China OR \"demanda global\" OR \"oferta global\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/4794167067861300299",
+        "category": "Google Alert - Commodities Minerais (Minério de Ferro)",
+        "target_company_ticker": null,
+        "target_segment_name": "Minerais Metálicos"
+    },
+    {
+        "source_name": "Tensões+ \"EUA\" + \"China\" + impacto Brasil OR comércio exterior OR agronegócio",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/14666574119167441337",
+        "category": "Google Alert - Geopolítico/Comércio Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "UOL Economia",
+        "feed_url": "https://rss.uol.com.br/feed/economia.xml",
+        "category": "Feed Portal - Economia Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "G1 Economia",
+        "feed_url": "https://g1.globo.com/rss/g1/economia/",
+        "category": "Feed Portal - Economia Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "CNN Money Markets",
+        "feed_url": "http://rss.cnn.com/rss/money_markets.rss",
+        "category": "Feed Agência Notícias - Mercados Globais",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "CNN Money News Economy",
+        "feed_url": "http://rss.cnn.com/rss/money_news_economy.rss",
+        "category": "Feed Agência Notícias - Economia Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "Folha de S.Paulo - Mercado",
+        "feed_url": "https://feeds.folha.uol.com.br/mercado/rss091.xml",
+        "category": "Feed Portal - Economia Brasil",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "Thomson Reuters News Releases",
+        "feed_url": "https://ir.thomsonreuters.com/rss/news-releases.xml?items=15",
+        "category": "Feed Agência Notícias - Corporativo Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "Bloomberg Economics News",
+        "feed_url": "https://feeds.bloomberg.com/economics/news.rss",
+        "category": "Feed Agência Notícias - Economia Global",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "MoneyTimes (Google News 24h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:24h+allinurl:moneytimes.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - MoneyTimes",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "Bloomberg (Google News 24h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:24h+allinurl:bloomberg.com&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - Bloomberg",
+        "target_company_ticker": null,
+        "target_segment_name": null
+    },
+    {
+        "source_name": "InvestNews(Google News 24h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:24h+allinurl:investnews.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - InvestNews",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "investnews.com.br"
+    },
+    {
+        "source_name": "Dow Jones Social Economy Feed",
+        "feed_url": "https://feeds.content.dowjones.io/public/rss/socialeconomyfeed",
+        "category": "Feed Agência Notícias - Economia Social",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": null
+    },
+    {
+        "source_name": "Eixos(Google News 72h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:72h+allinurl:eixos.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - Eixos",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "eixos.com.br"
+    },
+    {
+        "source_name": "MegaWhat.energy (Google News 72h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:72h+allinurl:megawhat.energy&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - MegaWhat Energy",
+        "target_company_ticker": null,
+        "target_segment_name": "Energia Elétrica",
+        "publisher_domain_override": "megawhat.energy"
+    },
+    {
+        "source_name": "CanalEnergia (Google News 72h)",
+        "feed_url": "https://news.google.com/rss/search?q=when:72h+allinurl:www.canalenergia.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - CanalEnergia",
+        "target_company_ticker": null,
+        "target_segment_name": "Energia Elétrica",
+        "publisher_domain_override": "canalenergia.com.br"
+    },
+    {
+        "source_name":"Agencia Petrobras (Google News 15D)",
+        "feed_url":"https://news.google.com/rss/search?q=when:360h+allinurl:agencia.petrobras.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
+        "category": "Feed Agregado Google News - Agência Petrobras",
+        "target_company_ticker": "PETR4.SA",
+        "target_segment_name": null,
+        "publisher_domain_override": "agencia.petrobras.com.br"
+    },
+    {
+        "source_name": "Council on Foreign Relations (Google News 7D)",
+        "feed_url": "https://news.google.com/rss/search?q=when:168h+allinurl:www.cfr.org&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - CFR",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "cfr.org"
+    },
+    {
+        "source_name": "Peterson Institute for International Economics (Google News 7D)",
+        "feed_url": "https://news.google.com/rss/search?q=when:168h+allinurl:www.piie.com&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - PIIE",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "piie.com"
+    },
+    {
+        "source_name": "Brookings (Google News 7D)",
+        "feed_url": "https://news.google.com/rss/search?q=when:168h+allinurl:www.brookings.edu&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - Brookings",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "brookings.edu"
+    },
+    {
+        "source_name": "Bruegel (Google News 7D)",
+        "feed_url": "https://news.google.com/rss/search?q=when:168h+allinurl:www.bruegel.org&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - Bruegel",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "bruegel.org"
+    },
+    {
+        "source_name": "Chatham House (Google News 7D)",
+        "feed_url": "https://news.google.com/rss/search?q=when:168h+allinurl:www.chathamhouse.org&hl=en-US&gl=US&ceid=US:en",
+        "category": "Feed Agregado Google News - Chatham House",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": "chathamhouse.org"
+    },
+    {
+        "source_name": "\"Banco do Japão\" OR \"BoJ\" + \"política monetária\"",
+        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/30756613630986189",
+        "category": "Google Alert - BoJ",
+        "target_company_ticker": null,
+        "target_segment_name": null,
+        "publisher_domain_override": null
+    }
+]

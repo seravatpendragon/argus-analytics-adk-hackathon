@@ -1,0 +1,243 @@
+[
+  {
+    "indicator_config_id": "BCB_SGS_432_SELIC_META", 
+    "enabled": true,
+    "source_api": "BCB_SGS", 
+    "data_category": "macro_national_interest_rate",
+    "db_indicator_name": "BCB Selic Meta Definida Copom", 
+    "db_indicator_type": "policy_interest_rate_target", 
+    "db_indicator_frequency": "D", 
+    "db_indicator_unit": "% a.a.",
+    "params": {
+      "sgs_code": 432,
+      "file_part": "Selic_Meta_Definida_Copom",
+      "source_desc": "BCB-SGS-432 Taxa de juros - Selic - Meta Selic definida pelo Copom",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_11_SELIC_EFETIVA",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_interest_rate",
+    "db_indicator_name": "BCB Selic Efetiva Diária",
+    "db_indicator_type": "effective_interest_rate",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "% a.d.", 
+    "params": {
+      "sgs_code": 1178,
+      "file_part": "Selic_Efetiva_Diaria_Anualizada",
+      "source_desc": "BCB-SGS-11 Taxa de juros - Selic efetiva - acumulada no mês - média diária",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_433_IPCA_MENSAL",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_inflation",
+    "db_indicator_name": "BCB IPCA Variação Mensal",
+    "db_indicator_type": "inflation_index_consumer_monthly_change",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "% a.m.", 
+    "params": {
+      "sgs_code": 433,
+      "file_part": "IPCA_Mensal",
+      "source_desc": "BCB-SGS-433 IPCA - Variação mensal",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_189_IGPM_MENSAL",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_inflation",
+    "db_indicator_name": "BCB IGP-M Variação Mensal",
+    "db_indicator_type": "inflation_index_general_monthly_change",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "% a.m.", 
+    "params": {
+      "sgs_code": 189,
+      "file_part": "IGPM_Mensal",
+      "source_desc": "BCB-SGS-189 IGP-M - Variação mensal",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_10813_CAMBIO_USD_PTAX", 
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_exchange_rate",
+    "db_indicator_name": "BCB Câmbio USD PTAX",
+    "db_indicator_type": "exchange_rate_spot",
+    "db_indicator_frequency": "D",
+    "db_indicator_unit": "BRL_per_USD",
+    "params": {
+      "sgs_code": 10813, 
+      "file_part": "Cambio_USD_PTAX_Venda",
+      "source_desc": "BCB-SGS-10813 Dólar americano PTAX Venda diário",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_24364_IBC_BR_AJUSTADO",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_economic_activity",
+    "db_indicator_name": "BCB IBC-Br dessazonalizado (Índice)",
+    "db_indicator_type": "economic_activity_index_seasonally_adjusted",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_points", 
+    "params": {
+      "sgs_code": 24364,
+      "file_part": "IBC_Br_Ajustado",
+      "source_desc": "BCB-SGS-24364 IBC-Br com ajuste sazonal (2002=100)",
+      "initial_history_start_date": "2010-01-01"
+    }
+  },
+
+  {
+    "indicator_config_id": "BCB_SGS_20630_INADIMPLENCIA_PF_REC_LIVRES", 
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_credit_market",
+    "db_indicator_name": "BCB Inadimplência PF (Rec. Livres)",
+    "db_indicator_type": "credit_delinquency_rate_individuals_free_resources",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%",
+    "params": {
+      "sgs_code": 20630, 
+      "file_part": "Inadimplencia_PF_Rec_Livres",
+      "source_desc": "BCB-SGS-20630 Inadimplência PF Recursos Livres",
+      "initial_history_start_date": "2011-03-01" 
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_20642_INADIMPLENCIA_PJ_REC_LIVRES",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_credit_market",
+    "db_indicator_name": "BCB Inadimplência PJ (Rec. Livres)",
+    "db_indicator_type": "credit_delinquency_rate_corporations_free_resources",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%",
+    "params": {
+      "sgs_code": 20642,
+      "file_part": "Inadimplencia_PJ_Rec_Livres",
+      "source_desc": "BCB-SGS-20642 Inadimplência PJ Recursos Livres",
+      "initial_history_start_date": "2011-03-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_20570_CREDITO_PF_SALDO_TOTAL", 
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_credit_market",
+    "db_indicator_name": "BCB Saldo Total Crédito PF",
+    "db_indicator_type": "credit_balance_individuals_total",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "BRL_million",
+    "params": {
+      "sgs_code": 20570,
+      "file_part": "Credito_PF_Saldo_Total",
+      "source_desc": "BCB-SGS-20570 Saldo da carteira de crédito - Pessoas físicas - Total",
+      "initial_history_start_date": "2010-03-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_20543_CREDITO_PJ_SALDO_TOTAL", 
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_credit_market",
+    "db_indicator_name": "BCB Saldo Total Crédito PJ",
+    "db_indicator_type": "credit_balance_corporations_total",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "BRL_million",
+    "params": {
+      "sgs_code": 20543,
+      "file_part": "Credito_PJ_Saldo_Total",
+      "source_desc": "BCB-SGS-20543 Saldo da carteira de crédito - Pessoas jurídicas - Total",
+      "initial_history_start_date": "2010-03-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_4513_DIVIDA_LIQUIDA_SP_PIB",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_fiscal",
+    "db_indicator_name": "BCB Dívida Líquida Setor Público (% PIB)",
+    "db_indicator_type": "public_debt_net_gdp_ratio",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%_of_GDP",
+    "params": {
+      "sgs_code": 4513,
+      "file_part": "Divida_Liquida_Setor_Publico_PIB",
+      "source_desc": "BCB-SGS-4513 Dívida líquida do setor público (%PIB)",
+      "initial_history_start_date": "2010-12-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_4189_DIVIDA_BRUTA_GG_PIB",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_fiscal",
+    "db_indicator_name": "BCB Dívida Bruta Governo Geral (% PIB)",
+    "db_indicator_type": "public_debt_gross_gdp_ratio",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%_of_GDP",
+    "params": {
+      "sgs_code": 4189,
+      "file_part": "Divida_Bruta_Governo_Geral_PIB",
+      "source_desc": "BCB-SGS-4189 Dívida bruta do governo geral (%PIB)",
+      "initial_history_start_date": "2010-12-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_5730_RESULTADO_NOMINAL_SP_PIB",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_fiscal",
+    "db_indicator_name": "BCB Resultado Nominal Setor Público (% PIB)",
+    "db_indicator_type": "public_fiscal_balance_nominal_gdp_ratio",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "%_of_GDP",
+    "params": {
+      "sgs_code": 5730,
+      "file_part": "Resultado_Nominal_SP_PIB",
+      "source_desc": "BCB-SGS-5730 Resultado nominal do setor público consolidado (%PIB)",
+      "initial_history_start_date": "2010-12-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_5760_JUROS_NOMINAIS_SP_12M",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_fiscal",
+    "db_indicator_name": "BCB Juros Nominais Setor Público (Acum. 12m)",
+    "db_indicator_type": "public_fiscal_interest_paid_nominal_12m_sum",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "BRL_million",
+    "params": {
+      "sgs_code": 5760,
+      "file_part": "Juros_Nominais_Pagos_R$_12m",
+      "source_desc": "BCB-SGS-5760 Juros nominais - Setor público consolidado - Acumulado em 12 meses",
+      "initial_history_start_date": "2010-12-01"
+    }
+  },
+  {
+    "indicator_config_id": "BCB_SGS_4382_PIB_ACUMULADO_12M_CORRENTE",
+    "enabled": true,
+    "source_api": "BCB_SGS",
+    "data_category": "macro_national_economic_activity",
+    "db_indicator_name": "BCB PIB Nominal (Acumulado 12 meses)",
+    "db_indicator_type": "gdp_nominal_12m_accumulated",
+    "db_indicator_frequency": "M", 
+    "db_indicator_unit": "BRL_million", 
+    "params": {
+      "sgs_code": 4382,
+      "file_part": "PIB_Acumulado_12m_R$_Corrente",
+      "source_desc": "BCB-SGS-4382 PIB acumulado nos últimos 12 meses",
+      "initial_history_start_date": "2010-01-01"
+    }
+  }
+]

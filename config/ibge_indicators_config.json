@@ -1,0 +1,134 @@
+[
+  {
+    "indicator_config_id": "IBGE_SIDRA_8888_PIM_PF_GERAL",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_industrial_production",
+    "db_indicator_name": "PIM-PF - Indústria Geral (Tabela 8888)",
+    "db_indicator_type": "pim_pf_general_index_monthly_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_number_sa",
+    "params": {
+      "table_code": "8888",
+      "file_part": "PIM_PF_Industria_Geral_8888",
+      "source_desc": "IBGE-SIDRA-8888 V12606 (Índice base fixa c/ ajuste sazonal) C544 (Tipo de índice) 129314 (Índice geral)",
+      "initial_history_years": 15,
+      "variable_arg_list": ["12606"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": {"544": "129314"}
+    }
+  },
+  {
+    "indicator_config_id": "IBGE_SIDRA_2072_PIB_VOLUME_TRIM",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_economic_activity",
+    "db_indicator_name": "PIB - Índice de Volume Trimestral (Tabela 2072)",
+    "db_indicator_type": "gdp_volume_index_quarterly_sa",
+    "db_indicator_frequency": "Q",
+    "db_indicator_unit": "index_number_sa",
+    "params": {
+      "table_code": "2072",
+      "file_part": "PIB_Indice_Volume_2072",
+      "source_desc": "IBGE-SIDRA-2072 V933 (Produto Interno Bruto a preços de mercado - índice dessazonalizado (média de 1995 = 100))",
+      "initial_history_years": 15,
+      "variable_arg_list": ["933"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": null
+    }
+  },
+  {
+    "indicator_config_id": "IBGE_SIDRA_6381_PNAD_DESOCUPACAO",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_labor_market",
+    "db_indicator_name": "PNAD Contínua - Taxa de Desocupação (Tabela 6381)",
+    "db_indicator_type": "unemployment_rate_pnadc_quarterly",
+    "db_indicator_frequency": "Q",
+    "db_indicator_unit": "percent",
+    "params": {
+      "table_code": "6381",
+      "file_part": "PNAD_Taxa_Desocupacao_6381",
+      "source_desc": "IBGE-SIDRA-6381 V4099 (Taxa de desocupação, pessoas de 14 anos ou mais)",
+      "initial_history_years": 15,
+      "variable_arg_list": ["4099"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": null
+    }
+  },
+  {
+    "indicator_config_id": "IBGE_SIDRA_6390_PNAD_RENDIMENTO_MEDIO",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_income",
+    "db_indicator_name": "PNAD Contínua - Rendimento Médio Real (Tabela 6390)",
+    "db_indicator_type": "avg_real_income_pnadc_quarterly",
+    "db_indicator_frequency": "Q",
+    "db_indicator_unit": "BRL_real",
+    "params": {
+      "table_code": "6390",
+      "file_part": "PNAD_Rendimento_Medio_Real_6390",
+      "source_desc": "IBGE-SIDRA-6390 V5933 (Rendimento médio real de todos os trabalhos)",
+      "initial_history_years": 15,
+      "variable_arg_list": ["5933"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": null
+    }
+  },
+  {
+    "indicator_config_id": "IBGE_SIDRA_8880_PMC_RECEITA_NOMINAL",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_retail_sales",
+    "db_indicator_name": "PMC - Receita Nominal Varejo (Tabela 8880)",
+    "db_indicator_type": "pmc_nominal_revenue_index_monthly_sa",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_number_sa",
+    "params": {
+      "table_code": "8880",
+      "file_part": "PMC_Receita_Nominal_Indice_8880",
+      "source_desc": "IBGE-SIDRA-8880 V7169 (Índice de receita nominal de vendas no varejo c/ ajuste sazonal) C11046 (Tipo de índice) 56733 (Índice geral)",
+      "initial_history_years": 15,
+      "variable_arg_list": ["7169"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": {"11046": "56733"}
+    }
+  },
+  {
+    "indicator_config_id": "IBGE_SIDRA_6903_IPP_INDUSTRIA_GERAL",
+    "enabled": true,
+    "source_api": "IBGE_SIDRA",
+    "data_category": "macro_national_producer_prices",
+    "db_indicator_name": "IPP - Indústria Geral (SIDRA 6903)",
+    "db_indicator_type": "ipp_general_industry_index_monthly",
+    "db_indicator_frequency": "M",
+    "db_indicator_unit": "index_number",
+    "params": {
+      "table_code": "6903",
+      "file_part": "IPP_Industria_Geral_6903",
+      "source_desc": "IBGE-SIDRA-6903 V1396 (Número-índice (dezembro de 2021 = 100)) C842 (Seções e atividades industriais (CNAE 2.0)) 46608 (Indústria geral)",
+      "initial_history_years": 15,
+      "variable_arg_list": ["1396"],
+      "period_col_sidra": "D2C",
+      "value_col_sidra": "V",
+      "geo_level_arg": "1",
+      "geo_codes_arg": "all",
+      "classifications_arg": {"842": "46608"}
+    }
+  }
+]
