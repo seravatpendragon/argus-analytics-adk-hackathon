@@ -4,10 +4,9 @@ import json
 import os
 import sys
 import time
-from config import settings
 from datetime import date, datetime, timezone
-from urllib.parse import urlparse # Adicionado para fallback em get_domain_from_url
-import tldextract # pip install tldextract
+from urllib.parse import urlparse  # Adicionado para fallback em get_domain_from_url
+import tldextract  # pip install tldextract
 import requests
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -20,16 +19,15 @@ try:
     PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_SCRIPT_PATH, "..", "..", ".."))
     if PROJECT_ROOT not in sys.path:
         sys.path.append(PROJECT_ROOT)
-    settings.logger.info(f"PROJECT_ROOT adicionado ao sys.path: {PROJECT_ROOT}") # Debug
+
 except NameError: # __file__ not defined, e.g. in interactive mode
     PROJECT_ROOT = os.path.abspath(os.path.join(os.getcwd()))
     if PROJECT_ROOT not in sys.path:
         sys.path.append(PROJECT_ROOT)
-    settings.logger.info(f"AVISO: __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
+from config import settings
 
 try:
-    from config import settings # Para API Keys e logger
     from src.database.db_utils import (
         get_db_session,
         get_or_create_news_source,

@@ -1,6 +1,7 @@
 # src/database/db_utils.py
 # -*- coding: utf-8 -*-
 
+import re
 import sys
 import os
 from sqlalchemy import create_engine, select, func, text
@@ -69,61 +70,6 @@ def get_db_session() -> Session:
 # ... COLE AQUI AS SUAS FUNÇÕES get_or_create_economic_sector, get_or_create_subsector, 
 # ... get_or_create_segment, get_or_create_company que estavam funcionando no asset_loader.py ...
 # ... Certifique-se que elas usem session.commit() após um session.add() de um novo objeto ...
-
-def get_or_create_news_source(session: Session, 
-                              source_domain: str, 
-                              source_api_name: str | None, 
-                              credibility_score: float | None) -> NewsSource | None:
-    """
-    Busca ou cria uma NewsSource pelo source_domain (url_base).
-    Retorna o objeto NewsSource.
-    """
-    if not source_domain:
-        settings.logger.warning("get_or_create_news_source: source_domain não fornecido.")
-        return None
-
-    # Remove "www." do início do domínio para consistência, se presente
-    normalized_domain = source_domain.lower()
-    if normalized_domain.startswith("www."):
-        normalized_domain = normalized_domain[4:]
-
-    news_source = session.query(NewsSource).filter(NewsSource.url_base == normalized_domain).first()
-
-    if news_source:
-        settings.logger.debug(f"NewsSource encontrada para '{normalized_domain}': ID {news_source.news_source_id}")
-        # Opcional: Lógica para atualizar o credibility_score se necessário
-        # if credibility_score is not None and news_source.base_credibility_score != credibility_score:
-        #     news_source.base_credibility_score = credibility_score
-        #     try:
-        #         session.commit()
-        #         settings.logger.info(f"Score de credibilidade atualizado para NewsSource ID {news_source.news_source_id}")
-        #     except Exception as e:
-        #         session.rollback()
-        #         settings.logger.error(f"Erro ao atualizar score de credibilidade para NewsSource ID {news_source.news_source_id}: {e}")
-        return news_source
-    else:
-        display_name = source_api_name if source_api_name and source_api_name.strip() else normalized_domain
-        settings.logger.info(f"NewsSource não encontrada para '{normalized_domain}'. Criando nova com nome '{display_name}'.")
-
-        new_source = NewsSource(
-            name=display_name[:255], # Garante que não exceda o limite do campo VARCHAR se houver
-            url_base=normalized_domain,
-            base_credibility_score=credibility_score
-        )
-        session.add(new_source)
-        try:
-            session.commit() # Commit para persistir e obter o ID
-            settings.logger.info(f"Nova NewsSource ID {new_source.news_source_id} criada para '{normalized_domain}'.")
-            return new_source
-        except IntegrityError: # Tratamento de race condition ou erro inesperado
-            session.rollback()
-            settings.logger.error(f"Erro de integridade ao criar NewsSource para '{normalized_domain}'. Tentando buscar novamente.")
-            # Tenta buscar novamente caso outra transação tenha criado
-            return session.query(NewsSource).filter(NewsSource.url_base == normalized_domain).first()
-        except Exception as e:
-            session.rollback()
-            settings.logger.error(f"Erro ao criar NewsSource para '{normalized_domain}': {e}")
-            return None
         
 def get_segment_id_by_name(session: Session, segment_name: str) -> int | None:
     """
@@ -209,10 +155,10 @@ def get_or_create_indicator_id(session: Session, indicator_name: str, indicator_
             settings.logger.critical(f"FALHA CRÍTICA ao criar/obter '{search_name}'.")
             return None
 
-def get_or_create_news_source(session: Session, 
-                              source_domain: str, 
-                              source_api_name: str | None, # Nome vindo da API (ex: "Terra.com.br")
-                              loaded_credibility_data: dict, # Dicionário carregado do fontes_credibilidade.json
+def get_or_create_news_source(session: Session,
+                              source_domain: str,
+                              source_api_name: str | None,
+                              loaded_credibility_data: dict,
                               default_unverified_score: float = 0.6) -> NewsSource | None:
     if not source_domain:
         settings.logger.warning("get_or_create_news_source: source_domain não fornecido.")
@@ -222,64 +168,128 @@ def get_or_create_news_source(session: Session,
     if normalized_domain.startswith("www."):
         normalized_domain = normalized_domain[4:]
 
+    # 1. Tenta buscar a fonte existente
     news_source = session.query(NewsSource).filter(NewsSource.url_base == normalized_domain).first()
 
     if news_source:
-        settings.logger.debug(f"NewsSource encontrada para '{normalized_domain}': ID {news_source.news_source_id}")
-        # Opcional: Atualizar se dados no JSON mudaram e são mais recentes?
-        # credibility_info_json = loaded_credibility_data.get(normalized_domain)
-        # if credibility_info_json and credibility_info_json.get('assessment_date') > news_source.assessment_date_db_field:
-        #    news_source.base_credibility_score = credibility_info_json.get("overall_credibility_score")
-        #    news_source.name = credibility_info_json.get("source_name", news_source.name)
-        #    session.commit()
+        settings.logger.debug(f"NewsSource ENCONTRADA no BD para '{normalized_domain}': ID {news_source.news_source_id}, Score: {news_source.base_credibility_score}")
+        # Opcional: Lógica para atualizar score se o JSON mudou e é mais recente.
+        # Isso seria mais apropriado para o script sync_credibility_to_db.py.
+        # Por ora, se a fonte existe, apenas a retornamos.
+        # Contudo, se o nome no JSON for diferente do nome no BD, PODERÍAMOS atualizar o nome aqui.
+        credibility_info_json = loaded_credibility_data.get(normalized_domain)
+        if credibility_info_json:
+            json_source_name = credibility_info_json.get("source_name")
+            json_score = credibility_info_json.get("overall_credibility_score") # Score do JSON
+            
+            made_changes = False
+            if json_source_name and news_source.name != json_source_name:
+                settings.logger.info(f"DB_UTILS: Atualizando nome da NewsSource ID {news_source.news_source_id} de '{news_source.name}' para '{json_source_name}' (do JSON).")
+                news_source.name = json_source_name[:255]
+                made_changes = True
+            
+            # Decide se atualiza o score:
+            # Poderíamos sempre atualizar para o score do JSON se a fonte for encontrada no JSON.
+            # Ou apenas se o score atual for o default (0.6), indicando que foi auto-criada antes.
+            if json_score is not None and news_source.base_credibility_score != json_score:
+                 # Se o score atual é o default E o JSON tem um score diferente, atualiza.
+                 # OU se simplesmente queremos que o JSON sempre sobreponha o que está no BD para fontes conhecidas.
+                 # Para este exemplo, vamos sempre atualizar para o score do JSON se a fonte estiver no JSON.
+                settings.logger.info(f"DB_UTILS: Atualizando score da NewsSource ID {news_source.news_source_id} de '{news_source.base_credibility_score}' para '{json_score}' (do JSON).")
+                news_source.base_credibility_score = json_score
+                made_changes = True
+
+            if made_changes:
+                try:
+                    session.commit()
+                except Exception as e_commit_update:
+                    session.rollback()
+                    settings.logger.error(f"DB_UTILS: Erro ao commitar atualização para NewsSource '{normalized_domain}': {e_commit_update}", exc_info=True)
+                    # Retorna o objeto news_source como estava antes da tentativa de atualização com falha no commit
+                    # Para isso, precisamos re-buscar ou não alterar o objeto em memória se o commit falhar.
+                    # Por simplicidade, vamos assumir que a atualização ou funciona ou o objeto não é alterado de forma inconsistente.
+                    # Uma forma mais segura seria:
+                    # old_name = news_source.name
+                    # old_score = news_source.base_credibility_score
+                    # news_source.name = ...
+                    # news_source.base_credibility_score = ...
+                    # try: session.commit()
+                    # except: session.rollback(); news_source.name = old_name; news_source.base_credibility_score = old_score
+
         return news_source
     else:
-        # Fonte não existe no BD, vamos criar
+        # Fonte não existe no BD, vamos criar.
+        settings.logger.debug(f"DB_UTILS: NewsSource para '{normalized_domain}' não encontrada no BD. Tentando criar.")
         credibility_info_json = loaded_credibility_data.get(normalized_domain)
-        display_name = source_api_name if source_api_name and source_api_name.strip() else normalized_domain
+        
         score_to_assign = default_unverified_score
-        assessment_dt = datetime.now(timezone.utc).date() # Data de hoje para assessment_date
+        name_for_db = normalized_domain # Default name se não estiver no JSON
 
         if credibility_info_json:
-            # Encontrado no JSON de credibilidade, então é "verificado"
-            display_name = credibility_info_json.get("source_name", display_name)
+            name_for_db = credibility_info_json.get("source_name", normalized_domain)
             score_to_assign = credibility_info_json.get("overall_credibility_score", default_unverified_score)
-            try:
-                assessment_dt_str = credibility_info_json.get("assessment_date")
-                if assessment_dt_str:
-                    assessment_dt = datetime.strptime(assessment_dt_str, "%Y-%m-%d").date()
-            except ValueError:
-                settings.logger.warning(f"Data de avaliação inválida para '{normalized_domain}' no JSON. Usando data atual.")
-            settings.logger.info(f"Fonte '{normalized_domain}' encontrada no JSON de credibilidade. Score: {score_to_assign}")
-        else:
-            # Não encontrado no JSON de credibilidade - é uma fonte nova/desconhecida
-            settings.logger.warning(
-                f"Fonte desconhecida '{normalized_domain}' (API name: '{source_api_name}'). "
-                f"Atribuindo score base {default_unverified_score}. Por favor, revise e adicione ao fontes_credibilidade.json."
+            settings.logger.info(
+                f"DB_UTILS: Fonte '{normalized_domain}' encontrada no JSON. Nome no BD: '{name_for_db}', Score: {score_to_assign}"
             )
-            # Você pode logar `normalized_domain` em um arquivo/tabela separada para revisão aqui.
-            # Ex: log_unknown_source_for_review(normalized_domain, source_api_name)
-
+        else:
+            settings.logger.warning(
+                f"DB_UTILS: Fonte DESCONHECIDA '{normalized_domain}' (Hint original do feed/API: '{source_api_name}') não encontrada em news_source_domain.json. "
+                f"Nome da fonte no BD será '{name_for_db}'. Atribuindo score base {score_to_assign}. "
+                f"Por favor, revise e adicione ao JSON."
+            )
+        
         new_source = NewsSource(
-            name=display_name[:255],
+            name=name_for_db[:255],
             url_base=normalized_domain,
             base_credibility_score=score_to_assign
-            # Considere adicionar 'assessment_date' à sua tabela NewsSource se quiser rastrear no BD
-            # assessment_date_db_field = assessment_dt
         )
         session.add(new_source)
         try:
             session.commit()
-            settings.logger.info(f"Nova NewsSource ID {new_source.news_source_id} criada para '{normalized_domain}' com score {score_to_assign}.")
+            settings.logger.info(f"DB_UTILS: Nova NewsSource ID {new_source.news_source_id} CRIADA para '{normalized_domain}' com nome '{new_source.name}' e score {new_source.base_credibility_score}.")
             return new_source
-        # ... (resto do tratamento de erro como antes) ...
-        except IntegrityError: 
+        except IntegrityError as ie: # Captura a exceção para logar detalhes
             session.rollback()
-            settings.logger.error(f"Erro de integridade ao criar NewsSource para '{normalized_domain}'. Tentando buscar novamente.")
-            return session.query(NewsSource).filter(NewsSource.url_base == normalized_domain).first()
-        except Exception as e:
+            # Log detalhado do erro de integridade
+            error_detail = getattr(ie, 'orig', repr(ie)) # Tenta pegar a exceção original do driver (psycopg2)
+            constraint_name_match = re.search(r'constraint "([^"]+)"', str(error_detail)) # Tenta pegar nome da constraint
+            constraint_violated = constraint_name_match.group(1) if constraint_name_match else "desconhecida"
+
+            settings.logger.error(
+                f"DB_UTILS: Erro de INTEGRIDADE ao COMITAR criação de NewsSource para '{normalized_domain}'. "
+                f"Constraint violada: '{constraint_violated}'. Detalhes: {error_detail}. Tentando buscar novamente."
+            )
+            
+            # Tenta buscar novamente, pois pode ter sido criada por outra transação concorrente (raro)
+            # ou a primeira busca falhou por algum motivo sutil.
+            retry_source = session.query(NewsSource).filter(NewsSource.url_base == normalized_domain).first()
+            if retry_source:
+                settings.logger.info(f"DB_UTILS: NewsSource para '{normalized_domain}' ENCONTRADA na RETENTATIVA de busca. ID: {retry_source.news_source_id}. Score no BD: {retry_source.base_credibility_score}")
+                # Opcional: se o score no BD for 0.6 e o JSON tiver um score melhor, atualizar aqui.
+                if credibility_info_json and retry_source.base_credibility_score == default_unverified_score:
+                    json_score = credibility_info_json.get("overall_credibility_score")
+                    json_name = credibility_info_json.get("source_name")
+                    if json_score is not None and json_score != default_unverified_score:
+                        settings.logger.info(f"DB_UTILS: Fonte '{normalized_domain}' (ID {retry_source.news_source_id}) encontrada na retentativa com score padrão. "
+                                            f"JSON tem score {json_score}. ATUALIZANDO.")
+                        retry_source.base_credibility_score = json_score
+                        if json_name: retry_source.name = json_name[:255]
+                        try:
+                            session.commit()
+                            settings.logger.info(f"DB_UTILS: Score/Nome da NewsSource ID {retry_source.news_source_id} atualizado para {retry_source.base_credibility_score}/{retry_source.name} via retentativa.")
+                        except Exception as e_update_retry:
+                            session.rollback()
+                            settings.logger.error(f"DB_UTILS: Erro ao ATUALIZAR NewsSource ID {retry_source.news_source_id} na retentativa: {e_update_retry}")
+                return retry_source
+            else:
+                settings.logger.critical(
+                    f"DB_UTILS: NewsSource para '{normalized_domain}' NÃO encontrada na retentativa de busca após IntegrityError. "
+                    f"Isso é INESPERADO se a constraint violada foi em 'url_base'. Verifique outras constraints UNIQUE (ex: 'name')."
+                )
+                return None
+        except Exception as e: # Outras exceções durante o commit
             session.rollback()
-            settings.logger.error(f"Erro ao criar NewsSource para '{normalized_domain}': {e}")
+            settings.logger.error(f"DB_UTILS: Erro desconhecido ao criar NewsSource para '{normalized_domain}': {e}", exc_info=True)
             return None
 
 def normalize_indicator_values(data_list, sentinel=1):
