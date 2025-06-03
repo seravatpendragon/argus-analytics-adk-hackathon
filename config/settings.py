@@ -132,5 +132,13 @@ API_DELAYS = {
     "RSS": float(os.getenv("NEWSAPI_API_DELAY_SECONDS", "0.5"))
 }
 
+# filepath: c:\ArgusAnalytics\argus-analytics-adk-hackathon\src\config.py
+import logging
+
+class Settings:
+    logger = logging.getLogger("default_logger")
+
+settings = Settings()
+
 
 

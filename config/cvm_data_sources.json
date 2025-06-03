@@ -1,0 +1,54 @@
+{
+  "fontes_cvm": [
+    {
+      "id": "CAD_CIA_ABERTA",
+      "descricao": "Cadastro de Companhias Abertas",
+      "tipo_arquivo_cvm": "CAD",
+      "filename_template": "cad_cia_aberta.csv",
+      "url_template": "https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv",
+      "tipo_retorno": "CSV", 
+      "anual": false, 
+      "subpasta_local": "CAD" 
+    },
+    {
+      "id": "IPE_CIA_ABERTA",
+      "descricao": "Informações Periódicas e Eventuais (Fatos Relevantes, Comunicados, etc.)",
+      "tipo_arquivo_cvm": "IPE",
+      "filename_template": "ipe_cia_aberta_{ano}.zip",
+      "url_template": "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_{ano}.zip",
+      "tipo_retorno": "ZIP",
+      "anual": true,
+      "subpasta_local": "IPE"
+    },
+    {
+      "id": "DFP_CIA_ABERTA",
+      "descricao": "Demonstrações Financeiras Padronizadas",
+      "tipo_arquivo_cvm": "DFP",
+      "filename_template": "dfp_cia_aberta_{ano}.zip",
+      "url_template": "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/DFP/DADOS/dfp_cia_aberta_{ano}.zip",
+      "tipo_retorno": "ZIP",
+      "anual": true,
+      "subpasta_local": "DFP"
+    },
+    {
+      "id": "ITR_CIA_ABERTA",
+      "descricao": "Informações Trimestrais",
+      "tipo_arquivo_cvm": "ITR",
+      "filename_template": "itr_cia_aberta_{ano}.zip",
+      "url_template": "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/ITR/DADOS/itr_cia_aberta_{ano}.zip",
+      "tipo_retorno": "ZIP",
+      "anual": true,
+      "subpasta_local": "ITR"
+    },
+    {
+      "id": "FCA_CIA_ABERTA",
+      "descricao": "Formulário Cadastral Anual",
+      "tipo_arquivo_cvm": "FCA",
+      "filename_template": "fca_cia_aberta_{ano}.zip",
+      "url_template": "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FCA/DADOS/fca_cia_aberta_{ano}.zip",
+      "tipo_retorno": "ZIP",
+      "anual": true,
+      "subpasta_local": "FCA"
+    }
+  ]
+}
