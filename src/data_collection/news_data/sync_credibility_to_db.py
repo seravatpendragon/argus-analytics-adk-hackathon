@@ -54,32 +54,37 @@ def sync_credibility():
                 settings.logger.warning(f"Score não encontrado para '{domain}' no JSON. Pulando.")
                 continue
 
-            # get_or_create_news_source já lida com a lógica de criar ou encontrar
-            # Precisamos garantir que ele ATUALIZE se a fonte já existe e o score mudou.
-            # A versão atual de get_or_create_news_source não atualiza scores existentes.
-            # Vamos adaptar a lógica aqui ou na função. Por simplicidade, vamos buscar e atualizar aqui.
-
-            existing_source = db_session.query(NewsSource).filter(NewsSource.url_base == domain.lower()).first()
+            existing_source = db_session.query(NewsSource).filter(
+                (NewsSource.url_base == domain.lower()) | (NewsSource.name == source_name[:255])
+            ).first()
             if existing_source:
-                if existing_source.base_credibility_score != overall_score or existing_source.name != source_name : # Adicione outras verificações se quiser
+                atualizou = False
+                # Atualiza score se mudou
+                if existing_source.base_credibility_score != overall_score:
                     existing_source.base_credibility_score = overall_score
-                    existing_source.name = source_name
-                    # existing_source.assessment_date_db_field = datetime.strptime(data.get("assessment_date"), "%Y-%m-%d").date() # Se tiver no BD
+                    atualizou = True
+                # Atualiza name se mudou
+                if existing_source.name != source_name[:255]:
+                    existing_source.name = source_name[:255]
+                    atualizou = True
+                # Atualiza url_base se mudou
+                if existing_source.url_base != domain.lower():
+                    existing_source.url_base = domain.lower()
+                    atualizou = True
+                if atualizou:
                     settings.logger.info(f"Atualizando NewsSource para '{domain}' com score {overall_score}.")
                     updated_sources += 1
+                else:
+                    settings.logger.info(f"Nenhuma alteração necessária para '{domain}'.")
             else:
-                # Se não existe, get_or_create_news_source cuidará da criação
-                # mas ele precisa do loaded_credibility_data para pegar o score correto na criação.
-                # Ou chamamos a criação diretamente aqui:
                 new_source = NewsSource(
                     name=source_name[:255],
                     url_base=domain.lower(),
                     base_credibility_score=overall_score
-                    # assessment_date_db_field = datetime.strptime(data.get("assessment_date"), "%Y-%m-%d").date() # Se tiver no BD
                 )
                 db_session.add(new_source)
                 settings.logger.info(f"Criando nova NewsSource para '{domain}' com score {overall_score}.")
-                created_sources +=1
+                created_sources += 1
         
         db_session.commit()
         settings.logger.info(f"Sincronização concluída. {created_sources} fontes criadas, {updated_sources} fontes atualizadas.")
