@@ -581,6 +581,13 @@
         "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.2, "accuracy": 0.1, "purpose": 0.1},
         "assessment_date": "2025-05-29",
         "notes": "Portal com forte viés opinativo e político."
+    },
+    "CVM - Regulatórios": {
+        "source_name": "Comissão de Valores Mobiliários",
+        "overall_credibility_score": 1.0,
+        "craap_scores": {"currency": 1.0, "relevance": 1.0, "authority": 1.0, "accuracy": 1.0, "purpose": 1.0},
+        "assessment_date": "2025-06-03",
+        "notes": "Comissão de Valores Mobiliários"
     }
 }
 

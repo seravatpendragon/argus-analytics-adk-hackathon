@@ -4,6 +4,7 @@
 import re
 import sys
 import os
+from venv import logger
 from sqlalchemy import create_engine, select, func, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -11,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 from datetime import date, datetime, timezone
 import pandas as pd # Adicionado para o caso de uso de get_latest_effective_date
 
-from typing import List, Dict # Para type hints (opcional, mas boa prática)
+from typing import List, Dict, Optional # Para type hints (opcional, mas boa prática)
 
 # Importe seu logger de settings e o modelo EconomicIndicatorValue
 from config import settings
@@ -421,3 +422,31 @@ def batch_upsert_company_maslow_profile(session: Session, data_to_upsert_list: l
         else:
             raise
     settings.logger.info(f"{len(processed_data_list)} perfis Maslow de empresa processados (UPSERT).")
+
+def get_company_by_cvm_code(session, cvm_code: str, company_name: Optional[str] = None) -> Optional[int]:
+    """
+    Busca uma Company pelo código CVM. Se não encontrar, a cria.
+    Retorna o company_id.
+    """
+    company = session.query(Company).filter_by(cvm_code=cvm_code).first()
+    if not company:
+        if company_name:
+            try:
+                company = Company(cvm_code=cvm_code, company_name=company_name)
+                session.add(company)
+                session.flush() # Atribui o ID ao objeto company
+                logger.info(f"Company '{company_name}' (CVM: {cvm_code}) criada com ID: {company.company_id}")
+            except IntegrityError:
+                session.rollback() # Rollback se outra transação criou a mesma empresa em paralelo
+                company = session.query(Company).filter_by(cvm_code=cvm_code).first() # Tenta buscar novamente
+                if not company: # Se ainda não encontrar, algo está errado
+                    logger.error(f"Erro de concorrência: Empresa com CVM code {cvm_code} não pôde ser criada nem encontrada após rollback.")
+                    return None
+            except Exception as e:
+                logger.error(f"Erro ao criar Company para CVM code {cvm_code}: {e}")
+                session.rollback()
+                return None
+        else:
+            logger.warning(f"Company com CVM code {cvm_code} não encontrada e 'company_name' não fornecido para criação.")
+            return None
+    return company.company_id

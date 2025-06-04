@@ -56,6 +56,7 @@ class Company(Base):
     company_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     ticker = Column(String, unique=True, nullable=False)
+    cvm_code = Column(String(50), unique=True, nullable=True)
     segment_id = Column(Integer, ForeignKey("Segments.segment_id"), nullable=False)
     control_type = Column(String, nullable=True)
     other_details_json = Column(JSON, nullable=True) # Usar JSONB se for PostgreSQL

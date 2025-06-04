@@ -1,9 +1,0 @@
-[
-    {
-        "source_name": "Exemplo Feed RSS Google PETR4",
-        "feed_url": "COLOQUE_A_URL_DO_SEU_ALERTA_RSS_AQUI",
-        "category": "Alerta Empresa",
-        "target_company_ticker": "PETR4",
-        "target_segment_name": null
-    }
-]
