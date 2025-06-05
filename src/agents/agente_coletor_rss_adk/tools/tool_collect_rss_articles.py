@@ -2,7 +2,7 @@
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone 
 from typing import Dict, Any, List, Optional
 import json
 
@@ -11,7 +11,6 @@ from pathlib import Path
 import sys
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    # Sobe 4 níveis (tools/ -> agente_coletor_rss_adk/ -> agents/ -> src/ -> PROJECT_ROOT)
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
@@ -22,9 +21,8 @@ except Exception as e:
 # Importa o coletor RSS real
 try:
     from src.data_collection.news_data.news_rss_collector import RSSCollector
-    # Importa as configurações do RSS
     from config import rss_news_config as rss_config
-    from config import news_sources_feeds as news_feeds_config # Para feeds específicos
+    from config import news_sources_feeds as news_feeds_config
     _USING_MOCK_COLLECTOR = False
 except ImportError as e:
     logging.error(f"Não foi possível importar RSSCollector ou configurações RSS: {e}. O teste usará mocks.")
@@ -41,76 +39,82 @@ if _USING_MOCK_COLLECTOR:
 
         def collect_articles_from_feeds(self, feed_urls: List[str]) -> List[Dict[str, Any]]:
             logger.info(f"MOCK RSS: Simulando coleta para feeds: {feed_urls}")
-            # Retorna dados mockados
-            mock_articles = [
-                {
-                    "title": f"Mock RSS Article 1 - {datetime.now().isoformat()}",
-                    "link": f"http://mock.com/rss/article1-{datetime.now().timestamp()}",
-                    "summary": "This is a mock summary for the first RSS article.",
-                    "published_parsed_iso": datetime.now(timezone.utc).isoformat(),
-                    "source_name": "Mock RSS Feed Source",
-                    "feed_url": feed_urls[0] if feed_urls else "http://mock.com/feed"
-                },
-                {
-                    "title": f"Mock RSS Article 2 - {datetime.now().isoformat()}",
-                    "link": f"http://mock.com/rss/article2-{datetime.now().timestamp()}",
-                    "summary": "This is a mock summary for the second RSS article.",
-                    "published_parsed_iso": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
-                    "source_name": "Another Mock RSS Source",
-                    "feed_url": feed_urls[0] if feed_urls else "http://mock.com/feed"
-                }
-            ]
+            mock_articles = []
+            for feed_url in feed_urls:
+                feed_info = next((f for f in self.feeds_config.get("rss_feeds", []) if f.get("url") == feed_url), {})
+                source_name_mock = feed_info.get("name", "Mock RSS Feed Source")
+                publisher_domain_override_mock = feed_info.get("publisher_domain_override")
+
+                mock_articles.extend([
+                    {
+                        "title": f"Mock RSS Article 1 from {source_name_mock}", # Removido timestamp
+                        "link": f"http://mock.com/rss/{source_name_mock.replace(' ', '_')}/article1", # Removido timestamp
+                        "summary": f"This is a mock summary for the first RSS article from {source_name_mock}.",
+                        "published_parsed_iso": datetime.now(timezone.utc).isoformat(),
+                        "source_name": source_name_mock,
+                        "feed_url": feed_url,
+                        "publisher_domain_override": publisher_domain_override_mock,
+                        "source_type": "RSS"
+                    },
+                    {
+                        "title": f"Mock RSS Article 2 from {source_name_mock}", # Removido timestamp
+                        "link": f"http://mock.com/rss/{source_name_mock.replace(' ', '_')}/article2", # Removido timestamp
+                        "summary": f"This is a mock summary for the second RSS article from {source_name_mock}.",
+                        "published_parsed_iso": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
+                        "source_name": source_name_mock,
+                        "feed_url": feed_url,
+                        "publisher_domain_override": publisher_domain_override_mock,
+                        "source_type": "RSS"
+                    }
+                ])
             return mock_articles
     
-    RSSCollector = MockRSSCollector # Atribui o mock à variável real para uso abaixo
-    rss_config = {} # Configuração mock
-    news_feeds_config = { # Configuração mock para feeds
+    RSSCollector = MockRSSCollector
+    rss_config = {}
+    news_feeds_config = { 
         "rss_feeds": [
-            {"name": "Mock RSS Feed", "url": "http://mock.com/feed"}
+            {"name": "Mock RSS Feed", "url": "http://mock.com/feed", "publisher_domain_override": "chathamhouse.org"},
+            {"name": "Another Regular Feed", "url": "http://another.com/feed", "source_name": "Another Source"}
         ]
     }
 
 
 def tool_collect_rss_articles(
-    feed_names: Optional[List[str]] = None, # Nomes dos feeds a coletar (ex: "Alertas Google PETR4")
-    tool_context: Any = None # ToolContext é opcional para esta ferramenta
+    feed_names: Optional[List[str]] = None,
+    tool_context: Any = None
 ) -> Dict[str, Any]:
-    """
-    Coleta artigos de notícias de feeds RSS configurados.
-
-    Args:
-        feed_names (Optional[List[str]]): Lista de nomes de feeds a coletar. Se None, coleta de todos os feeds configurados.
-        tool_context (Any): O contexto da ferramenta (opcional, injetado pelo ADK).
-
-    Returns:
-        Dict[str, Any]: Um dicionário com 'status' ('success' ou 'error') e uma lista
-                        de artigos brutos ('articles_data').
-    """
     try:
-        all_feeds = news_feeds_config.get("rss_feeds", [])
+        all_feeds_config = news_feeds_config.get("rss_feeds", [])
         
-        feeds_to_collect_urls = []
+        feeds_to_collect_info = []
         if feed_names:
             for feed_name in feed_names:
-                found_feed = next((f for f in all_feeds if f.get("name") == feed_name), None)
-                if found_feed and found_feed.get("url"):
-                    feeds_to_collect_urls.append(found_feed["url"])
+                found_feed = next((f for f in all_feeds_config if f.get("name") == feed_name), None)
+                if found_feed:
+                    feeds_to_collect_info.append(found_feed)
                 else:
-                    logger.warning(f"Feed RSS '{feed_name}' não encontrado na configuração ou sem URL.")
-        else: # Coleta de todos os feeds se nenhum nome for especificado
-            feeds_to_collect_urls = [f["url"] for f in all_feeds if f.get("url")]
+                    logger.warning(f"Feed RSS '{feed_name}' não encontrado na configuração.")
+        else:
+            feeds_urls = [f.get("url") for f in all_feeds_config if f.get("url")]
+            feeds_to_collect_info = [f for f in all_feeds_config if f.get("url") in feeds_urls]
 
-        if not feeds_to_collect_urls:
+
+        if not feeds_to_collect_info:
             raise ValueError("Nenhum feed RSS válido para coletar.")
 
-        collector = RSSCollector(feeds_config=news_feeds_config) # Passa a config completa se o real precisar
-        articles = collector.collect_articles_from_feeds(feed_urls=feeds_to_collect_urls)
+        feeds_urls = [f.get("url") for f in feeds_to_collect_info if f.get("url")]
         
-        # Adiciona o source_type para o pipeline de pré-processamento
+        collector = RSSCollector(feeds_config=news_feeds_config)
+        articles = collector.collect_articles_from_feeds(feed_urls=feeds_urls)
+        
         for article in articles:
             article["source_type"] = "RSS"
+            feed_info_for_article = next((f for f in feeds_to_collect_info if f.get("url") == article.get("feed_url")), {})
+            article["source_name"] = feed_info_for_article.get("name", article.get("source_name", "Unknown RSS Source"))
+            article["publisher_domain_override"] = feed_info_for_article.get("publisher_domain_override")
 
-        logger.info(f"Coleta RSS: Encontrados {len(articles)} artigos de {len(feeds_to_collect_urls)} feeds.")
+
+        logger.info(f"Coleta RSS: Encontrados {len(articles)} artigos de {len(feeds_to_collect_info)} feeds configurados.")
         return {"status": "success", "articles_data": articles}
 
     except Exception as e:

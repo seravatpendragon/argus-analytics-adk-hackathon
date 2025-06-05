@@ -41,13 +41,8 @@ try:
     from agents.sub_agente_relevancia_tipo_adk.agent import SubAgenteRelevanciaTipo_ADK
     from agents.sub_agente_stakeholders_adk.agent import SubAgenteStakeholders_ADK
     from agents.sub_agente_impacto_maslow_adk.agent import SubAgenteImpactoMaslow_ADK
-    from agents.agente_consolidador_analise_adk.agent import AgenteConsolidadorDeAnalise_ADK 
+    from agents.agente_consolidador_analise_adk.agent import AgenteConsolidadorDeAnalise_ADK # O Consolidador
     
-    # NOVO: Importar o Agente Identificador de Entidade
-    from agents.sub_agente_identificador_entidade_adk.agent import SubAgenteIdentificadorDeEntidade_ADK
-    # NOVO: Importar a ferramenta de padronização (se for chamá-la manualmente no script)
-    from agents.sub_agente_identificador_entidade_adk.tools.tool_identify_entity_ticker import tool_identify_entity_ticker
-
     # Importa a ferramenta de persistência para chamá-la manualmente
     from agents.agente_consolidador_analise_adk.tools.tool_update_article_analysis import tool_update_article_analysis
 
@@ -111,12 +106,6 @@ async def run_llm_analysis_pipeline():
     settings.logger.info(f"ADK Session criada: App='{APP_NAME}', User='{USER_ID}', Session='{SESSION_ID}'")
 
     # Instanciar os Runners para cada sub-agente de análise e para o Consolidador
-    # NOVO: Runner para o Agente Identificador de Entidade
-    entity_identifier_agent_runner = Runner(
-        agent=SubAgenteIdentificadorDeEntidade_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
     sentiment_agent_runner = Runner(
         agent=SubAgenteSentimento_ADK,
         app_name=APP_NAME,
@@ -160,7 +149,7 @@ async def run_llm_analysis_pipeline():
 
     settings.logger.info(f"Encontrados {len(articles_to_analyze)} artigos pendentes para análise LLM.")
 
-    settings.logger.info("\n--- FASE 2: Delegar Anßlise LLM e Consolidar Resultados ---")
+    settings.logger.info("\n--- FASE 2: Delegar Análise LLM e Consolidar Resultados ---")
     
     analyzed_articles_count = 0 
 
@@ -177,68 +166,19 @@ async def run_llm_analysis_pipeline():
         
         consolidated_llm_results = {}
         suggested_article_type = None 
-        
-        # --- NOVO: Chamada ao SubAgenteIdentificadorDeEntidade_ADK ---
-        settings.logger.info("    Chamando SubAgenteIdentificadorDeEntidade_ADK...")
-        entity_input_content = types.Content(role='user', parts=[types.Part(text=content_for_llm)])
-        events_entity_id = entity_identifier_agent_runner.run_async(
-            user_id=USER_ID,
-            session_id=SESSION_ID,
-            new_message=entity_input_content
-        )
-        entity_identification_result = None
-        async for event in events_entity_id:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    try:
-                        entity_identification_result = json.loads(event.content.parts[0].text)
-                        settings.logger.info(f"    Identificação de Entidade obtida: {entity_identification_result.get('nome_entidade_foco')}")
-                        
-                        # NOVO: Padronizar o ticker/identificador usando a ferramenta Python
-                        class TempToolContextForToolCall: # Mock simples de ToolContext para a ferramenta
-                            def __init__(self):
-                                self.state = {}
-                        temp_tool_context_for_tool_call = TempToolContextForToolCall()
 
-                        standardized_id_result = tool_identify_entity_ticker(
-                            entity_name_raw=entity_identification_result.get('nome_entidade_foco'),
-                            entity_type=entity_identification_result.get('tipo_entidade_foco'),
-                            tool_context=temp_tool_context_for_tool_call 
-                        )
-                        if standardized_id_result.get("status") == "success":
-                            entity_identification_result['ticker_padronizado'] = standardized_id_result.get('padronizado_identificador')
-                            settings.logger.info(f"    Ticker/Identificador padronizado para: {entity_identification_result['ticker_padronizado']}")
-                        else:
-                            settings.logger.warning(f"    Falha ao padronizar ticker: {standardized_id_result.get('message')}. Usando sugerido.")
-                        
-                        consolidated_llm_results["entity_identification"] = entity_identification_result
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Identificação de Entidade para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not entity_identification_result: 
-            settings.logger.error(f"    Falha ao obter identificação de entidade para Artigo ID {article_id}. Pulando análises dependentes.")
-            continue 
-
-        # Preparar o contexto para os sub-agentes INJETANDO NO TEXTO DO PROMPT
-        context_prefix = ""
-        if entity_identification_result.get('tipo_entidade_foco'):
-            context_prefix += f"A notícia é predominantemente sobre: {entity_identification_result['tipo_entidade_foco']}. "
-        if entity_identification_result.get('nome_entidade_foco'):
-            context_prefix += f"A entidade/tema principal é '{entity_identification_result['nome_entidade_foco']}'. "
-        if entity_identification_result.get('ticker_padronizado'):
-            context_prefix += f"O identificador padronizado é '{entity_identification_result['ticker_padronizado']}'. "
-        
-        llm_input_content_for_sub_agents = types.Content(
-            role='user', 
-            parts=[types.Part(text=f"Contexto da Notícia: {context_prefix}\n\nTexto Original para Análise:\n{content_for_llm}")]
-        )
+        llm_input_content = types.Content(role='user', parts=[types.Part(text=json.dumps({
+            "news_article_id": article_id,
+            "llm_analysis_json": consolidated_llm_results, # Será preenchido abaixo
+            "suggested_article_type": suggested_article_type # Será preenchido abaixo
+        }))])
 
         # --- Chamada ao SubAgenteSentimento_ADK ---
         settings.logger.info("    Chamando SubAgenteSentimento_ADK...")
         events_sentiment = sentiment_agent_runner.run_async(
             user_id=USER_ID, 
             session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
+            new_message=llm_input_content
         )
         sentiment_result = None
         async for event in events_sentiment:
@@ -247,7 +187,7 @@ async def run_llm_analysis_pipeline():
                     try:
                         sentiment_result = json.loads(event.content.parts[0].text)
                         consolidated_llm_results["sentiment_analysis"] = sentiment_result
-                        settings.logger.info(f"    Sentimento obtido: {sentiment_result.get('sentimento_central_percebido')}") 
+                        settings.logger.info(f"    Sentimento obtido: {sentiment_result.get('sentiment_petr4')}")
                     except json.JSONDecodeError as e:
                         settings.logger.error(f"    Erro ao parsear JSON de Sentimento para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
                 break
@@ -258,7 +198,7 @@ async def run_llm_analysis_pipeline():
         events_relevance = relevance_type_agent_runner.run_async(
             user_id=USER_ID, 
             session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
+            new_message=llm_input_content
         )
         relevance_result = None
         async for event in events_relevance:
@@ -268,7 +208,7 @@ async def run_llm_analysis_pipeline():
                         relevance_result = json.loads(event.content.parts[0].text)
                         consolidated_llm_results["relevance_type_analysis"] = relevance_result
                         suggested_article_type = relevance_result.get("suggested_article_type")
-                        settings.logger.info(f"    Relevância/Tipo obtido: {relevance_result.get('score_relevancia_noticia_fac_ia')} / {suggested_article_type}") 
+                        settings.logger.info(f"    Relevância/Tipo obtido: {relevance_result.get('relevance_petr4')} / {suggested_article_type}")
                     except json.JSONDecodeError as e:
                         settings.logger.error(f"    Erro ao parsear JSON de Relevância/Tipo para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
                 break
@@ -279,7 +219,7 @@ async def run_llm_analysis_pipeline():
         events_stakeholders = stakeholders_agent_runner.run_async(
             user_id=USER_ID, 
             session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
+            new_message=llm_input_content
         )
         stakeholders_result = None
         async for event in events_stakeholders:
@@ -288,7 +228,7 @@ async def run_llm_analysis_pipeline():
                     try:
                         stakeholders_result = json.loads(event.content.parts[0].text)
                         consolidated_llm_results["stakeholders_analysis"] = stakeholders_result
-                        settings.logger.info(f"    Stakeholders obtidos: {stakeholders_result.get('stakeholder_primario_afetado')}") 
+                        settings.logger.info(f"    Stakeholders obtidos: {stakeholders_result.get('stakeholders')}")
                     except json.JSONDecodeError as e:
                         settings.logger.error(f"    Erro ao parsear JSON de Stakeholders para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
                 break
@@ -299,7 +239,7 @@ async def run_llm_analysis_pipeline():
         events_maslow = maslow_agent_runner.run_async(
             user_id=USER_ID, 
             session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
+            new_message=llm_input_content
         )
         maslow_result = None
         async for event in events_maslow:
@@ -308,7 +248,7 @@ async def run_llm_analysis_pipeline():
                     try:
                         maslow_result = json.loads(event.content.parts[0].text)
                         consolidated_llm_results["maslow_analysis"] = maslow_result
-                        settings.logger.info(f"    Impacto Maslow obtido: {maslow_result.get('maslow_impact_scores')}") 
+                        settings.logger.info(f"    Impacto Maslow obtido: {maslow_result.get('maslow_impact_primary')}")
                     except json.JSONDecodeError as e:
                         settings.logger.error(f"    Erro ao parsear JSON de Maslow para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
                 break
@@ -317,6 +257,7 @@ async def run_llm_analysis_pipeline():
         # --- Chamada ao AgenteConsolidadorDeAnalise_ADK para gerar JSON de parâmetros ---
         settings.logger.info("    Chamando AgenteConsolidadorDeAnalise_ADK para gerar JSON de parâmetros...")
         
+        # Cria o payload de entrada para o consolidador com os resultados já obtidos
         consolidator_payload = {
             "news_article_id": article_id,
             "llm_analysis_json": consolidated_llm_results,
@@ -324,59 +265,64 @@ async def run_llm_analysis_pipeline():
         }
         consolidator_input_content = types.Content(role='user', parts=[types.Part(text=json.dumps(consolidator_payload))])
 
-        events_consoli = consolidator_agent_runner.run_async(
+        events_consolidator = consolidator_agent_runner.run_async(
             user_id=USER_ID,
             session_id=SESSION_ID,
             new_message=consolidator_input_content
         )
         
-        consolidator_params_json = None
-        async for event in events_consoli:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    raw_json_text = event.content.parts[0].text.strip()
-                    match = re.search(r"```(?:json)?\s*\n(.*)\n```", raw_json_text, re.DOTALL)
-                    if match:
-                        raw_json_text = match.group(1).strip()
-                    
-                    try:
-                        consolidator_params_json = json.loads(raw_json_text)
-                        settings.logger.info(f"    Consolidador gerou JSON de parâmetros para persistência.")
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de parâmetros do Consolidador para Artigo ID {article_id}: {e}. Conteúdo: {raw_json_text[:100]}...")
-                break
+        consolidator_response_json = None
+        async for event in events_consolidator:
+            # O consolidador agora DEVE retornar APENAS um JSON na sua resposta final
+            if event.is_final_response() and event.content and event.content.parts and event.content.parts[0].text:
+                raw_json_text = event.content.parts[0].text.strip()
+                # Tenta remover o bloco de código Markdown se presente
+                match = re.search(r"```(?:json)?\s*\n(.*)\n```", raw_json_text, re.DOTALL)
+                if match:
+                    raw_json_text = match.group(1).strip()
+                
+                try:
+                    consolidator_response_json = json.loads(raw_json_text)
+                    settings.logger.info(f"    Consolidador gerou JSON de parâmetros: {consolidator_response_json}")
+                except json.JSONDecodeError as e:
+                    settings.logger.error(f"    Erro ao parsear JSON de parâmetros do Consolidador para Artigo ID {article_id}: {e}. Conteúdo: {raw_json_text[:100]}...")
+                break # Sai do loop de eventos após obter a resposta final
         
-        consolidator_final_status = {"status": "error", "message": "Consolidador não gerou JSON de parâmetros válido."}
+        consolidator_result = {"status": "error", "message": "Consolidador não gerou JSON de parâmetros válido."}
 
-        if consolidated_llm_results and consolidator_params_json: 
+        if consolidator_response_json:
+            # Agora, CHAMA A FERRAMENTA REAL DE ATUALIZAÇÃO com os parâmetros obtidos do LLM
             try:
+                # mock_tool_context para a chamada manual (pois não é chamada via runner)
                 class TempToolContextForManualCall:
                     def __init__(self):
                         self.state = {}
                 temp_tool_context = TempToolContextForManualCall()
 
+                # A ferramenta tool_update_article_analysis espera news_article_id, llm_analysis_json, suggested_article_type
+                # Estes já estão no consolidator_response_json
                 manual_tool_call_result = tool_update_article_analysis(
-                    news_article_id=consolidator_params_json.get('news_article_id'),
-                    llm_analysis_json=consolidator_params_json.get('llm_analysis_json'),
-                    suggested_article_type=consolidator_params_json.get('suggested_article_type'),
-                    tool_context=temp_tool_context 
+                    news_article_id=consolidator_response_json.get('news_article_id'),
+                    llm_analysis_json=consolidator_response_json.get('llm_analysis_json'),
+                    suggested_article_type=consolidator_response_json.get('suggested_article_type'),
+                    tool_context=temp_tool_context # Passa o contexto temporário
                 )
-                consolidator_final_status = manual_tool_call_result 
-                settings.logger.info(f"    Chamada manual da ferramenta de persistência: {consolidator_final_status.get('message')}")
+                consolidator_result = manual_tool_call_result # Atribui o RESULTADO REAL da ferramenta
+                settings.logger.info(f"    Chamada manual da ferramenta de persistência: {consolidator_result.get('message')}")
 
             except Exception as e:
                 settings.logger.error(f"    Erro na chamada manual da ferramenta de persistência para Artigo ID {article_id}: {e}", exc_info=True)
-                consolidator_final_status = {"status": "error", "message": f"Erro na chamada manual da ferramenta: {e}"}
+                consolidator_result = {"status": "error", "message": f"Erro na chamada manual da ferramenta: {e}"}
 
         
-        if not consolidator_final_status or consolidator_final_status.get("status") != "success":
-            settings.logger.error(f"  Falha na consolidação/persistência para Artigo ID {article_id}. Resultado: {consolidator_final_status}")
+        if not consolidator_result or consolidator_result.get("status") != "success":
+            settings.logger.error(f"  Falha na consolidação/persistência para Artigo ID {article_id}. Resultado: {consolidator_result}")
         else:
             settings.logger.info(f"  Análise LLM COMPLETA e persistida para Artigo ID {article_id}!")
             analyzed_articles_count += 1 
 
     settings.logger.info(f"\n--- FASE 2 CONCLUÍDA: {analyzed_articles_count} artigos analisados e persistidos. ---") 
-    settings.logger.info("\n--- TESTE DE INTEGRAÇÃO SIMULADO: Pipeline de Anßlise LLM CONCLUÍDO ---")
+    settings.logger.info("\n--- TESTE DE INTEGRAÇÃO SIMULADO: Pipeline de Análise LLM CONCLUÍDO ---")
 
 
 # --- Executar a função assíncrona ---
