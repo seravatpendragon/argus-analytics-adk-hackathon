@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import json # Para o bloco de teste
 from datetime import datetime # Para o bloco de teste
+import logging
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -13,13 +14,11 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para agent.py (AgenteColetorRegulatorios).")
 except NameError:
     # Fallback para ambientes onde __file__ pode não estar definido (ex: alguns REPLs interativos)
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"AVISO (agent.py AgenteColetorRegulatorios): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
 try:
     from config import settings
@@ -36,7 +35,7 @@ try:
         # Se ToolContext não puder ser importado (ex: ADK não totalmente instalado ou caminho incorreto),
         # define uma classe dummy para que o script de teste não quebre.
         # Esta classe dummy simula apenas o atributo 'state' que a ferramenta de processamento IPE precisa.
-        print("AVISO (agent.py): google.adk.tools.tool_context.ToolContext não pôde ser importado. Usando MockToolContext simples.")
+        settings.logger.info("AVISO (agent.py): google.adk.tools.tool_context.ToolContext não pôde ser importado. Usando MockToolContext simples.")
         class ToolContext: # type: ignore
             def __init__(self):
                 self.state = {}
@@ -56,11 +55,11 @@ try:
         logging.basicConfig(level=logging.INFO, format=log_format)
         settings.logger = logging.getLogger("agente_coletor_regulatorios_adk_fb_logger")
         settings.logger.info("Logger fallback inicializado em agent.py.")
-    print("Módulos do projeto e ADK importados com sucesso para AgenteColetorRegulatorios_ADK.")
+    settings.logger.info("Módulos do projeto e ADK importados com sucesso para AgenteColetorRegulatorios_ADK.")
 except ImportError as e:
-    print(f"Erro CRÍTICO em agent.py (AgenteColetorRegulatorios_ADK) ao importar módulos: {e}")
-    print(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
-    print(f"sys.path atual: {sys.path}")
+    settings.logger.info(f"Erro CRÍTICO em agent.py (AgenteColetorRegulatorios_ADK) ao importar módulos: {e}")
+    settings.logger.info(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
+    settings.logger.info(f"sys.path atual: {sys.path}")
     # Garante que 'settings' e 'ToolContext' existam para que o restante do script não quebre
     if 'settings' not in locals() and 'settings' not in globals():
         import logging; logging.basicConfig(level=logging.INFO)
@@ -74,7 +73,7 @@ except ImportError as e:
         _TOOL_CONTEXT_IMPORTED_SUCCESSFULLY = False # Garante que a flag seja False em caso de erro de importação
     # sys.exit(1) # Comentado para permitir análise estática
 except Exception as e:
-    print(f"Erro INESPERADO durante imports iniciais em agent.py (AgenteColetorRegulatorios_ADK): {e}")
+    settings.logger.info(f"Erro INESPERADO durante imports iniciais em agent.py (AgenteColetorRegulatorios_ADK): {e}")
     # Garante que 'settings' e 'ToolContext' existam como fallback
     if 'settings' not in locals() and 'settings' not in globals():
         import logging; logging.basicConfig(level=logging.INFO)
@@ -103,6 +102,20 @@ process_ipe_tool_adk_instance = FunctionTool(func=tool_process_cvm_ipe_local)
 
 # --- Definição do Agente ---
 AgenteColetorRegulatorios_ADK = Agent(
+logger.info(f'Modelo LLM para o agente {Path(__file__).name} (AgenteColetorRegulatorios_ADK (Nome não extraído)): {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente AgenteColetorRegulatorios_ADK (Nome não extraído) carregada com sucesso em {Path(__file__).name}.')
+logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.")
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteColetorRegulatorios_ADK.name} carregada com sucesso em {Path(__file__).name}.")
     name="agente_coletor_regulatorios_cvm_petr4_v1",
     model=MODELO_LLM_AGENTE,
     description=(
@@ -129,38 +142,38 @@ if __name__ == '__main__':
     settings.logger.info(f"  Modelo Configurado: {AgenteColetorRegulatorios_ADK.model}")
 
     # --- DEBUG: INSPECIONANDO AgenteColetorRegulatorios_ADK.tools ---
-    print("\n--- DEBUG: INSPECIONANDO AgenteColetorRegulatorios_ADK.tools ---")
+    settings.logger.info("\n--- DEBUG: INSPECIONANDO AgenteColetorRegulatorios_ADK.tools ---")
     tool_names_for_log = [] # Lista para coletar os nomes das ferramentas para o log principal
     if hasattr(AgenteColetorRegulatorios_ADK, 'tools') and AgenteColetorRegulatorios_ADK.tools is not None:
-        print(f"Tipo de AgenteColetorRegulatorios_ADK.tools: {type(AgenteColetorRegulatorios_ADK.tools)}")
+        settings.logger.info(f"Tipo de AgenteColetorRegulatorios_ADK.tools: {type(AgenteColetorRegulatorios_ADK.tools)}")
         if isinstance(AgenteColetorRegulatorios_ADK.tools, list):
-            print(f"Número de ferramentas: {len(AgenteColetorRegulatorios_ADK.tools)}")
+            settings.logger.info(f"Número de ferramentas: {len(AgenteColetorRegulatorios_ADK.tools)}")
             for idx, tool_item in enumerate(AgenteColetorRegulatorios_ADK.tools):
-                print(f"  Ferramenta {idx}: {tool_item}")
-                print(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
-                print(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
+                settings.logger.info(f"  Ferramenta {idx}: {tool_item}")
+                settings.logger.info(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
+                settings.logger.info(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
                 
                 tool_name = f"UNKNOWN_TOOL_{idx}" # Default fallback para o nome
                 if hasattr(tool_item, 'name'):
                     tool_name = tool_item.name
-                    print(f"      tool_item.name: {tool_name}")
+                    settings.logger.info(f"      tool_item.name: {tool_name}")
                 elif hasattr(tool_item, 'func') and hasattr(tool_item.func, '__name__'): # Para casos onde FunctionTool não tem .name direto, mas a função wrapped tem
                     tool_name = tool_item.func.__name__
-                    print(f"      tool_item.func.__name__: {tool_name}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_name}")
                 elif hasattr(tool_item, '__name__'): # Para o caso de ser a função pura
                     tool_name = tool_item.__name__
-                    print(f"      tool_item.__name__: {tool_name}")
+                    settings.logger.info(f"      tool_item.__name__: {tool_name}")
                 
                 tool_names_for_log.append(tool_name)
 
                 if hasattr(tool_item, 'func'): # Sempre mostra o func se existir, para verificar o wrapper
-                    print(f"      tool_item.func: {tool_item.func}")
-                    print(f"      tool_item.func.__name__: {tool_item.func.__name__}")
+                    settings.logger.info(f"      tool_item.func: {tool_item.func}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
         else:
-            print("AgenteColetorRegulatorios_ADK.tools NÃO é uma lista.")
+            settings.logger.info("AgenteColetorRegulatorios_ADK.tools NÃO é uma lista.")
     else:
-        print("AgenteColetorRegulatorios_ADK NÃO possui atributo 'tools' ou é None.")
-    print("--- FIM DEBUG: INSPECIONANDO AgenteColetorRegulatorios_ADK.tools ---\n")
+        settings.logger.info("AgenteColetorRegulatorios_ADK NÃO possui atributo 'tools' ou é None.")
+    settings.logger.info("--- FIM DEBUG: INSPECIONANDO AgenteColetorRegulatorios_ADK.tools ---\n")
 
     # Agora, a linha que causava o erro deve funcionar, usando a lista 'tool_names_for_log'
     settings.logger.info(f"  Ferramentas Disponíveis (coletado): {tool_names_for_log}")

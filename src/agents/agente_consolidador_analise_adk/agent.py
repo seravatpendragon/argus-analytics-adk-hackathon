@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 import json
 from datetime import datetime
+import logging
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -13,12 +14,10 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent # Sobe 3 níveis
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para agent.py (AgenteConsolidadorAnalise).")
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"AVISO (agent.py AgenteConsolidadorAnalise): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
 try:
     from config import settings
@@ -38,7 +37,7 @@ try:
         logging.basicConfig(level=logging.INFO, format=log_format)
         settings.logger = logging.getLogger("agente_consolidador_analise_adk_fb_logger")
         settings.logger.info("Logger fallback inicializado em agent.py.")
-    print("Módulos do projeto e ADK importados com sucesso para AgenteConsolidadorDeAnalise_ADK.")
+    settings.logger.info("Módulos do projeto e ADK importados com sucesso para AgenteConsolidadorDeAnalise_ADK.")
 except ImportError as e:
     settings.logger.error(f"Erro CRÍTICO em agent.py (AgenteConsolidadorDeAnalise_ADK) ao importar módulos: {e}")
     settings.logger.error(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")

@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import json
 from datetime import datetime
+import logging
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -12,13 +13,10 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent # Sobe 3 níveis
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para agent.py (AgenteColetorNewsAPI).")
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"AVISO (agent.py AgenteColetorNewsAPI): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
-
 try:
     from config import settings
     from google.adk.agents import Agent
@@ -37,7 +35,7 @@ try:
         logging.basicConfig(level=logging.INFO, format=log_format)
         settings.logger = logging.getLogger("agente_coletor_newsapi_adk_fb_logger")
         settings.logger.info("Logger fallback inicializado em agent.py.")
-    print("Módulos do projeto e ADK importados com sucesso para AgenteColetorNewsAPI_ADK.")
+    settings.logger.info("Módulos do projeto e ADK importados com sucesso para AgenteColetorNewsAPI_ADK.")
 except ImportError as e:
     settings.logger.error(f"Erro CRÍTICO em agent.py (AgenteColetorNewsAPI_ADK) ao importar módulos: {e}")
     settings.logger.error(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
@@ -56,6 +54,20 @@ collect_newsapi_tool_adk_instance = FunctionTool(func=tool_collect_newsapi_artic
 
 # --- Definição do Agente ---
 AgenteColetorNewsAPI_ADK = Agent(
+logger.info(f'Modelo LLM para o agente {Path(__file__).name} (AgenteColetorNewsAPI_ADK (Nome não extraído)): {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente AgenteColetorNewsAPI_ADK (Nome não extraído) carregada com sucesso em {Path(__file__).name}.')
+logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.")
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.")
     name="agente_coletor_newsapi_adk_v1",
     model=MODELO_LLM_AGENTE,
     description=(
@@ -75,38 +87,38 @@ if __name__ == '__main__':
     settings.logger.info(f"  Modelo Configurado: {AgenteColetorNewsAPI_ADK.model}")
 
     # --- DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---
-    print("\n--- DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---")
+    settings.logger.info("\n--- DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---")
     tool_names_for_log = [] 
     if hasattr(AgenteColetorNewsAPI_ADK, 'tools') and AgenteColetorNewsAPI_ADK.tools is not None:
-        print(f"Tipo de AgenteColetorNewsAPI_ADK.tools: {type(AgenteColetorNewsAPI_ADK.tools)}")
+        settings.logger.info(f"Tipo de AgenteColetorNewsAPI_ADK.tools: {type(AgenteColetorNewsAPI_ADK.tools)}")
         if isinstance(AgenteColetorNewsAPI_ADK.tools, list):
-            print(f"Número de ferramentas: {len(AgenteColetorNewsAPI_ADK.tools)}")
+            settings.logger.info(f"Número de ferramentas: {len(AgenteColetorNewsAPI_ADK.tools)}")
             for idx, tool_item in enumerate(AgenteColetorNewsAPI_ADK.tools):
-                print(f"  Ferramenta {idx}: {tool_item}")
-                print(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
-                print(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
+                settings.logger.info(f"  Ferramenta {idx}: {tool_item}")
+                settings.logger.info(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
+                settings.logger.info(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
                 
                 tool_name = f"UNKNOWN_TOOL_{idx}" 
                 if hasattr(tool_item, 'name'):
                     tool_name = tool_item.name
-                    print(f"      tool_item.name: {tool_name}")
+                    settings.logger.info(f"      tool_item.name: {tool_name}")
                 elif hasattr(tool_item, 'func') and hasattr(tool_item.func, '__name__'): 
                     tool_name = tool_item.func.__name__
-                    print(f"      tool_item.func.__name__: {tool_item.func.__name__}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
                 elif hasattr(tool_item, '__name__'): 
                     tool_name = tool_item.__name__
-                    print(f"      tool_item.__name__: {tool_item.__name__}")
+                    settings.logger.info(f"      tool_item.__name__: {tool_item.__name__}")
                 
                 tool_names_for_log.append(tool_name)
 
                 if hasattr(tool_item, 'func'): 
-                    print(f"      tool_item.func: {tool_item.func}")
-                    print(f"      tool_item.func.__name__: {tool_item.func.__name__}")
+                    settings.logger.info(f"      tool_item.func: {tool_item.func}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
         else:
-            print("AgenteColetorNewsAPI_ADK.tools NÃO é uma lista.")
+            settings.logger.info("AgenteColetorNewsAPI_ADK.tools NÃO é uma lista.")
     else:
-        print("AgenteColetorNewsAPI_ADK NÃO possui atributo 'tools' ou é None.")
-    print("--- FIM DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---\n")
+        settings.logger.info("AgenteColetorNewsAPI_ADK NÃO possui atributo 'tools' ou é None.")
+    settings.logger.info("--- FIM DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---\n")
 
     settings.logger.info(f"  Ferramentas Disponíveis (coletado): {tool_names_for_log}")
 

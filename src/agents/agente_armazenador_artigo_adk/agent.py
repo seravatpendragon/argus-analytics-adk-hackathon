@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import json
 from datetime import datetime
+import logging
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -12,12 +13,10 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para agent.py (AgenteArmazenadorArtigo).")
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"AVISO (agent.py AgenteArmazenadorArtigo): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
 try:
     from config import settings
@@ -37,18 +36,18 @@ try:
         logging.basicConfig(level=logging.INFO, format=log_format)
         settings.logger = logging.getLogger("agente_armazenador_artigo_adk_fb_logger")
         settings.logger.info("Logger fallback inicializado em agent.py.")
-    print("Módulos do projeto e ADK importados com sucesso para AgenteArmazenadorArtigo_ADK.")
+    settings.logger.info("Módulos do projeto e ADK importados com sucesso para AgenteArmazenadorArtigo_ADK.")
 except ImportError as e:
-    print(f"Erro CRÍTICO em agent.py (AgenteArmazenadorArtigo_ADK) ao importar módulos: {e}")
-    print(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
-    print(f"sys.path atual: {sys.path}")
+    settings.logger.info(f"Erro CRÍTICO em agent.py (AgenteArmazenadorArtigo_ADK) ao importar módulos: {e}")
+    settings.logger.info(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
+    settings.logger.info(f"sys.path atual: {sys.path}")
     if 'settings' not in locals() and 'settings' not in globals():
         import logging; logging.basicConfig(level=logging.INFO)
         _fb_logger = logging.getLogger("agent_armazenador_NO_SETTINGS_logger")
         settings = type('SettingsFallback', (), {'logger': _fb_logger})() # type: ignore
     sys.exit(1) # Saia se os imports críticos falharem
 except Exception as e:
-    print(f"Erro INESPERADO durante imports iniciais em agent.py (AgenteArmazenadorArtigo_ADK): {e}")
+    settings.logger.info(f"Erro INESPERADO durante imports iniciais em agent.py (AgenteArmazenadorArtigo_ADK): {e}")
     if 'settings' not in locals() and 'settings' not in globals():
         import logging; logging.basicConfig(level=logging.INFO)
         _fb_logger = logging.getLogger("agent_armazenador_NO_SETTINGS_logger2")
@@ -64,6 +63,20 @@ persist_tool_adk_instance = FunctionTool(func=tool_persist_news_or_cvm_document)
 
 # --- Definição do Agente ---
 AgenteArmazenadorArtigo_ADK = Agent(
+logger.info(f'Modelo LLM para o agente {Path(__file__).name} (AgenteArmazenadorArtigo_ADK (Nome não extraído)): {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente AgenteArmazenadorArtigo_ADK (Nome não extraído) carregada com sucesso em {Path(__file__).name}.')
+logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.")
+logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
+logger.info(f"Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.")
     name="agente_armazenador_artigo_adk_v1",
     model=MODELO_LLM_AGENTE,
     description=(
@@ -84,38 +97,38 @@ if __name__ == '__main__':
     settings.logger.info(f"  Modelo Configurado: {MODELO_LLM_AGENTE}")
 
     # --- DEBUG: INSPECIONANDO AgenteArmazenadorArtigo_ADK.tools ---
-    print("\n--- DEBUG: INSPECIONANDO AgenteArmazenadorArtigo_ADK.tools ---")
+    settings.logger.info("\n--- DEBUG: INSPECIONANDO AgenteArmazenadorArtigo_ADK.tools ---")
     tool_names_for_log = [] 
     if hasattr(AgenteArmazenadorArtigo_ADK, 'tools') and AgenteArmazenadorArtigo_ADK.tools is not None:
-        print(f"Tipo de AgenteArmazenadorArtigo_ADK.tools: {type(AgenteArmazenadorArtigo_ADK.tools)}")
+        settings.logger.info(f"Tipo de AgenteArmazenadorArtigo_ADK.tools: {type(AgenteArmazenadorArtigo_ADK.tools)}")
         if isinstance(AgenteArmazenadorArtigo_ADK.tools, list):
-            print(f"Número de ferramentas: {len(AgenteArmazenadorArtigo_ADK.tools)}")
+            settings.logger.info(f"Número de ferramentas: {len(AgenteArmazenadorArtigo_ADK.tools)}")
             for idx, tool_item in enumerate(AgenteArmazenadorArtigo_ADK.tools):
-                print(f"  Ferramenta {idx}: {tool_item}")
-                print(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
-                print(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
+                settings.logger.info(f"  Ferramenta {idx}: {tool_item}")
+                settings.logger.info(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
+                settings.logger.info(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
                 
                 tool_name = f"UNKNOWN_TOOL_{idx}" 
                 if hasattr(tool_item, 'name'):
                     tool_name = tool_item.name
-                    print(f"      tool_item.name: {tool_name}")
+                    settings.logger.info(f"      tool_item.name: {tool_name}")
                 elif hasattr(tool_item, 'func') and hasattr(tool_item.func, '__name__'): 
                     tool_name = tool_item.func.__name__
-                    print(f"      tool_item.func.__name__: {tool_name}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_name}")
                 elif hasattr(tool_item, '__name__'): 
                     tool_name = tool_item.__name__
-                    print(f"      tool_item.__name__: {tool_item.__name__}")
+                    settings.logger.info(f"      tool_item.__name__: {tool_item.__name__}")
                 
                 tool_names_for_log.append(tool_name)
 
                 if hasattr(tool_item, 'func'): 
-                    print(f"      tool_item.func: {tool_item.func}")
-                    print(f"      tool_item.func.__name__: {tool_item.func.__name__}")
+                    settings.logger.info(f"      tool_item.func: {tool_item.func}")
+                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
         else:
-            print("AgenteArmazenadorArtigo_ADK.tools NÃO é uma lista.")
+            settings.logger.info("AgenteArmazenadorArtigo_ADK.tools NÃO é uma lista.")
     else:
-        print("AgenteArmazenadorArtigo_ADK NÃO possui atributo 'tools' ou é None.")
-    print("--- FIM DEBUG: INSPECIONANDO AgenteArmazenadorArtigo_ADK.tools ---\n")
+        settings.logger.info("AgenteArmazenadorArtigo_ADK NÃO possui atributo 'tools' ou é None.")
+    settings.logger.info("--- FIM DEBUG: INSPECIONANDO AgenteArmazenadorArtigo_ADK.tools ---\n")
 
     settings.logger.info(f"  Ferramentas Disponíveis (coletado): {tool_names_for_log}")
 

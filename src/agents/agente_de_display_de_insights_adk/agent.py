@@ -4,7 +4,9 @@ from datetime import datetime, timedelta
 import logging
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session as DBSession # Renomear para evitar conflito com Session do ADK
-import json # Para lidar com o JSON do DB
+import json
+
+from config import settings # Para lidar com o JSON do DB
 
 # --- IMPORTAÇÕES REAIS ---
 try:
@@ -140,7 +142,6 @@ if _USING_MOCK_DB:
     NewsArticle = MockNewsArticle # Atribui o mock à variável real
 
 
-logger = logging.getLogger(__name__)
 
 def tool_fetch_analyzed_articles(limit: int = 5) -> Dict[str, Any]:
     """
@@ -174,11 +175,11 @@ def tool_fetch_analyzed_articles(limit: int = 5) -> Dict[str, Any]:
                 "llm_analysis_json": article.llm_analysis_json # Inclui o JSON completo da análise
             })
         
-        logger.info(f"Ferramenta fetch_analyzed_articles: Encontrados {len(articles_data)} artigos analisados.")
+        settings.logger.info(f"Ferramenta fetch_analyzed_articles: Encontrados {len(articles_data)} artigos analisados.")
         return {"status": "success", "analyzed_articles_data": articles_data}
 
     except Exception as e:
-        logger.error(f"Erro ao buscar artigos analisados: {e}", exc_info=True)
+        settings.logger.error(f"Erro ao buscar artigos analisados: {e}", exc_info=True)
         return {"status": "error", "message": str(e), "analyzed_articles_data": []}
     finally:
         session.close()

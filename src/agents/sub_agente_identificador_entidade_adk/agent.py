@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 import json
+import logging
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -11,12 +12,10 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent # Sobe 3 níveis
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    # print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para agent.py (SubAgenteIdentificadorEntidade).")
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    # print(f"AVISO (agent.py SubAgenteIdentificadorEntidade): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
 try:
     from config import settings
@@ -33,7 +32,7 @@ try:
         logging.basicConfig(level=logging.INFO, format=log_format)
         settings.logger = logging.getLogger("sub_agente_identificador_entidade_adk_fb_logger")
         settings.logger.info("Logger fallback inicializado em agent.py.")
-    print("Módulos do projeto e ADK importados com sucesso para SubAgenteIdentificadorDeEntidade_ADK.")
+        settings.logger.info("Módulos do projeto e ADK importados com sucesso para SubAgenteIdentificadorDeEntidade_ADK.")
 except ImportError as e:
     settings.logger.error(f"Erro CRÍTICO em agent.py (SubAgenteIdentificadorDeEntidade_ADK) ao importar módulos: {e}")
     settings.logger.error(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
@@ -48,17 +47,20 @@ MODELO_LLM_AGENTE = "gemini-2.0-flash-001"
 settings.logger.info(f"Modelo LLM para SubAgenteIdentificadorDeEntidade_ADK: {MODELO_LLM_AGENTE}")
 
 # --- Definição do Agente ---
-SubAgenteIdentificadorDeEntidade_ADK = Agent(
-    name="sub_agente_identificador_entidade_adk_v1",
+
+SubAgenteIdentificadorDeEntidade_ADK = Agent( # ESTE NOME
+    name="sub_agente_identificador_entidade_adk_v1", # E ESTE NOME
     model=MODELO_LLM_AGENTE, 
     description=(
         "Sub-agente especializado em identificar a entidade principal (empresa, segmento B3, macroeconômico) "
         "ou o foco temático de uma notícia e padronizar seu identificador."
     ),
     instruction=agente_prompt.PROMPT,
-    tools=[], # Por enquanto, sem ferramentas diretas; a padronização será externa no `run_test_pipeline`.
-              # Ou poderíamos ter uma ferramenta `tool_padronizar_ticker_segmento` aqui.
+    tools=[],
 )
+
+settings.logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
+settings.logger.info(f'Definição do Agente {SubAgenteIdentificadorDeEntidade_ADK.name} carregada com sucesso em {Path(__file__).name}.')
 
 if __name__ == '__main__':
     settings.logger.info(f"--- Teste Standalone da Definição e Fluxo Simulado do Agente: {SubAgenteIdentificadorDeEntidade_ADK.name} ---")

@@ -111,7 +111,6 @@ async def run_llm_analysis_pipeline():
     settings.logger.info(f"ADK Session criada: App='{APP_NAME}', User='{USER_ID}', Session='{SESSION_ID}'")
 
     # Instanciar os Runners para cada sub-agente de análise e para o Consolidador
-    # NOVO: Runner para o Agente Identificador de Entidade
     entity_identifier_agent_runner = Runner(
         agent=SubAgenteIdentificadorDeEntidade_ADK,
         app_name=APP_NAME,
@@ -167,9 +166,9 @@ async def run_llm_analysis_pipeline():
     for article in articles_to_analyze:
         article_id = article.get("news_article_id")
         headline = article.get("headline", "Sem Título")
-        content_for_llm = article.get("full_text") or article.get("summary") or article.get("headline")
+        content_for_llm_raw = article.get("full_text") or article.get("summary") or article.get("headline")
 
-        if not content_for_llm:
+        if not content_for_llm_raw:
             settings.logger.warning(f"Artigo ID {article_id} não possui conteúdo para análise. Pulando.")
             continue
 
@@ -180,7 +179,7 @@ async def run_llm_analysis_pipeline():
         
         # --- NOVO: Chamada ao SubAgenteIdentificadorDeEntidade_ADK ---
         settings.logger.info("    Chamando SubAgenteIdentificadorDeEntidade_ADK...")
-        entity_input_content = types.Content(role='user', parts=[types.Part(text=content_for_llm)])
+        entity_input_content = types.Content(role='user', parts=[types.Part(text=content_for_llm_raw)])
         events_entity_id = entity_identifier_agent_runner.run_async(
             user_id=USER_ID,
             session_id=SESSION_ID,
@@ -195,7 +194,7 @@ async def run_llm_analysis_pipeline():
                         settings.logger.info(f"    Identificação de Entidade obtida: {entity_identification_result.get('nome_entidade_foco')}")
                         
                         # NOVO: Padronizar o ticker/identificador usando a ferramenta Python
-                        class TempToolContextForToolCall: # Mock simples de ToolContext para a ferramenta
+                        class TempToolContextForToolCall: 
                             def __init__(self):
                                 self.state = {}
                         temp_tool_context_for_tool_call = TempToolContextForToolCall()
@@ -220,6 +219,7 @@ async def run_llm_analysis_pipeline():
             continue 
 
         # Preparar o contexto para os sub-agentes INJETANDO NO TEXTO DO PROMPT
+        # Construa o prefixo de contexto que será adicionado ao input de texto de cada sub-agente
         context_prefix = ""
         if entity_identification_result.get('tipo_entidade_foco'):
             context_prefix += f"A notícia é predominantemente sobre: {entity_identification_result['tipo_entidade_foco']}. "
@@ -228,9 +228,13 @@ async def run_llm_analysis_pipeline():
         if entity_identification_result.get('ticker_padronizado'):
             context_prefix += f"O identificador padronizado é '{entity_identification_result['ticker_padronizado']}'. "
         
+        # O input de texto real para os sub-agentes agora tem o contexto no início.
+        llm_input_text_for_sub_agents = f"Contexto da Notícia: {context_prefix}\n\nTexto Original para Análise:\n{content_for_llm_raw}"
+        
+        # O Content para os sub-agentes contém apenas o texto já formatado.
         llm_input_content_for_sub_agents = types.Content(
             role='user', 
-            parts=[types.Part(text=f"Contexto da Notícia: {context_prefix}\n\nTexto Original para Análise:\n{content_for_llm}")]
+            parts=[types.Part(text=llm_input_text_for_sub_agents)]
         )
 
         # --- Chamada ao SubAgenteSentimento_ADK ---
