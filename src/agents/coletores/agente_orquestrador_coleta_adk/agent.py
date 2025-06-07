@@ -24,9 +24,9 @@ try:
     from google.adk.sessions import InMemorySessionService
     from google.genai import types
     
-    from src.agents.agente_coletor_newsapi_adk.agent import AgenteColetorNewsAPI_ADK
-    from src.agents.agente_coletor_rss_adk.agent import AgenteColetorRSS_ADK
-    from src.agents.agente_coletor_regulatorios_adk.agent import AgenteColetorRegulatorios_ADK
+    from src.agents.coletores.agente_coletor_newsapi_adk.agent import AgenteColetorNewsAPI_ADK
+    from src.agents.coletores.agente_coletor_rss_adk.agent import AgenteColetorRSS_ADK
+    from src.agents.coletores.agente_coletor_regulatorios_adk.agent import AgenteColetorRegulatorios_ADK
     
     from . import prompt as agent_prompt
 except ImportError as e:
