@@ -1,122 +1,84 @@
 # src/agents/agente_coletor_rss_adk/tools/tool_collect_rss_articles.py
 
-import logging
-import os
-from datetime import datetime, timedelta, timezone 
-from typing import Dict, Any, List, Optional
 import json
-
-# --- Configuração de Caminhos para Imports do Projeto ---
 from pathlib import Path
-import sys
-try:
-    CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-except Exception as e:
-    logging.error(f"Erro ao configurar PROJECT_ROOT em tool_collect_rss_articles.py: {e}")
-    PROJECT_ROOT = Path(os.getcwd())
+import time
+from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from config import settings
+from src.database.db_utils import get_db_session, get_company_id_for_ticker, get_segment_id_by_name
+from src.database.create_db_tables import NewsArticle, NewsArticleCompanyLink, NewsArticleSegmentLink
+from src.data_collection.news_data.news_rss_collector import RSSCollector
 
-# Importa o coletor RSS real
-try:
-    from src.data_collection.news_data.news_rss_collector import RSSCollector
-    from config import rss_news_config as rss_config
-    from config import news_sources_feeds as news_feeds_config
-    _USING_MOCK_COLLECTOR = False
-except ImportError as e:
-    logging.error(f"Não foi possível importar RSSCollector ou configurações RSS: {e}. O teste usará mocks.")
-    _USING_MOCK_COLLECTOR = True
-
-logger = logging.getLogger(__name__)
-
-# --- MOCK RSSCollector para testes standalone sem configuração real ---
-if _USING_MOCK_COLLECTOR:
-    class MockRSSCollector:
-        def __init__(self, feeds_config: Dict[str, Any]):
-            self.feeds_config = feeds_config
-            logger.warning("Usando MockRSSCollector. Nenhuma chamada real a feeds RSS será feita.")
-
-        def collect_articles_from_feeds(self, feed_urls: List[str]) -> List[Dict[str, Any]]:
-            logger.info(f"MOCK RSS: Simulando coleta para feeds: {feed_urls}")
-            mock_articles = []
-            for feed_url in feed_urls:
-                feed_info = next((f for f in self.feeds_config.get("rss_feeds", []) if f.get("url") == feed_url), {})
-                source_name_mock = feed_info.get("name", "Mock RSS Feed Source")
-                publisher_domain_override_mock = feed_info.get("publisher_domain_override")
-
-                mock_articles.extend([
-                    {
-                        "title": f"Mock RSS Article 1 from {source_name_mock}", # Removido timestamp
-                        "link": f"http://mock.com/rss/{source_name_mock.replace(' ', '_')}/article1", # Removido timestamp
-                        "summary": f"This is a mock summary for the first RSS article from {source_name_mock}.",
-                        "published_parsed_iso": datetime.now(timezone.utc).isoformat(),
-                        "source_name": source_name_mock,
-                        "feed_url": feed_url,
-                        "publisher_domain_override": publisher_domain_override_mock,
-                        "source_type": "RSS"
-                    },
-                    {
-                        "title": f"Mock RSS Article 2 from {source_name_mock}", # Removido timestamp
-                        "link": f"http://mock.com/rss/{source_name_mock.replace(' ', '_')}/article2", # Removido timestamp
-                        "summary": f"This is a mock summary for the second RSS article from {source_name_mock}.",
-                        "published_parsed_iso": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
-                        "source_name": source_name_mock,
-                        "feed_url": feed_url,
-                        "publisher_domain_override": publisher_domain_override_mock,
-                        "source_type": "RSS"
-                    }
-                ])
-            return mock_articles
-    
-    RSSCollector = MockRSSCollector
-    rss_config = {}
-    news_feeds_config = { 
-        "rss_feeds": [
-            {"name": "Mock RSS Feed", "url": "http://mock.com/feed", "publisher_domain_override": "chathamhouse.org"},
-            {"name": "Another Regular Feed", "url": "http://another.com/feed", "source_name": "Another Source"}
-        ]
-    }
-
-
-def tool_collect_rss_articles(
-    feed_names: Optional[List[str]] = None,
-    tool_context: Any = None
-) -> Dict[str, Any]:
+def load_json_file(file_path: Path) -> list | None:
+    if not file_path.exists():
+        settings.logger.error(f"Arquivo de configuração não encontrado: {file_path}")
+        return None
     try:
-        all_feeds_config = news_feeds_config.get("rss_feeds", [])
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        settings.logger.error(f"Erro ao ler {file_path}: {e}", exc_info=True)
+        return None
+
+def tool_collect_rss_articles(tool_context=None) -> dict:
+    """ Coleta artigos de Feeds RSS com base nas configurações do arquivo 'rss_news_config.json'. """
+    settings.logger.info("Ferramenta 'tool_collect_rss_articles' iniciada...")
+    db_session: Session | None = None
+    try:
+        db_session = get_db_session()
         
-        feeds_to_collect_info = []
-        if feed_names:
-            for feed_name in feed_names:
-                found_feed = next((f for f in all_feeds_config if f.get("name") == feed_name), None)
-                if found_feed:
-                    feeds_to_collect_info.append(found_feed)
-                else:
-                    logger.warning(f"Feed RSS '{feed_name}' não encontrado na configuração.")
-        else:
-            feeds_urls = [f.get("url") for f in all_feeds_config if f.get("url")]
-            feeds_to_collect_info = [f for f in all_feeds_config if f.get("url") in feeds_urls]
-
-
-        if not feeds_to_collect_info:
-            raise ValueError("Nenhum feed RSS válido para coletar.")
-
-        feeds_urls = [f.get("url") for f in feeds_to_collect_info if f.get("url")]
+        config_dir = Path(settings.BASE_DIR) / "config"
+        rss_sources_config = load_json_file(config_dir / "rss_news_config.json")
+        if not isinstance(rss_sources_config, list):
+             raise ValueError("Configuração de Feeds RSS não encontrada ou não é uma lista.")
         
-        collector = RSSCollector(feeds_config=news_feeds_config)
-        articles = collector.collect_articles_from_feeds(feed_urls=feeds_urls)
+        credibility_data = load_json_file(config_dir / "news_source_domain.json") or {}
+
+        collector = RSSCollector(db_session=db_session, credibility_data=credibility_data)
         
-        for article in articles:
-            article["source_type"] = "RSS"
-            feed_info_for_article = next((f for f in feeds_to_collect_info if f.get("url") == article.get("feed_url")), {})
-            article["source_name"] = feed_info_for_article.get("name", article.get("source_name", "Unknown RSS Source"))
-            article["publisher_domain_override"] = feed_info_for_article.get("publisher_domain_override")
+        all_prepared_data = []
+        for feed_config in rss_sources_config:
+            prepared_tuples = collector.run_single_feed(feed_config)
+            if prepared_tuples:
+                all_prepared_data.extend(prepared_tuples)
+            if len(rss_sources_config) > 1:
+                time.sleep(0.5)
 
+        if not all_prepared_data:
+            return {"status": "success", "message": "Nenhum artigo novo para inserir dos Feeds RSS."}
 
-        logger.info(f"Coleta RSS: Encontrados {len(articles)} artigos de {len(feeds_to_collect_info)} feeds configurados.")
-        return {"status": "success", "articles_data": articles}
+        # Etapa A: Inserir todos os artigos
+        all_article_dicts = [data[0] for data in all_prepared_data]
+        stmt = pg_insert(NewsArticle).values(all_article_dicts).on_conflict_do_nothing(index_elements=['article_link'])
+        result = db_session.execute(stmt)
+        
+        # Etapa B: Criar os Vínculos
+        links_created = 0
+        for article_dict, target_ticker, target_segment in all_prepared_data:
+            article_id = db_session.query(NewsArticle.news_article_id).filter(NewsArticle.article_link == article_dict['article_link']).scalar()
+            if not article_id: continue
+
+            if target_ticker:
+                company_id = get_company_id_for_ticker(db_session, target_ticker)
+                if company_id:
+                    link_stmt = pg_insert(NewsArticleCompanyLink).values(news_article_id=article_id, company_id=company_id).on_conflict_do_nothing()
+                    db_session.execute(link_stmt)
+                    links_created +=1
+            
+            if target_segment:
+                segment_id = get_segment_id_by_name(db_session, target_segment)
+                if segment_id:
+                    link_stmt = pg_insert(NewsArticleSegmentLink).values(news_article_id=article_id, segment_id=segment_id).on_conflict_do_nothing()
+                    db_session.execute(link_stmt)
+
+        db_session.commit()
+        
+        return { "status": "success", "message": f"Coleta RSS concluída. {result.rowcount} novos artigos inseridos e {links_created} vínculos processados." }
 
     except Exception as e:
-        logger.error(f"Erro ao coletar artigos de feeds RSS: {e}", exc_info=True)
-        return {"status": "error", "message": str(e), "articles_data": []}
+        if db_session: db_session.rollback()
+        settings.logger.error(f"Erro na ferramenta tool_collect_rss_articles: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+    finally:
+        if db_session: db_session.close()

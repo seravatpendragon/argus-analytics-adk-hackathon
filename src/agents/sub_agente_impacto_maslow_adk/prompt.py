@@ -12,6 +12,7 @@ Você deve retornar sua análise como um objeto JSON, com os seguintes campos:
     * 'Sociais': Impacto em relações, comunicação, reputação social, parcerias, engajamento comunitário, tendências de consumo social, etc.
     * 'Estima': Impacto em reconhecimento, status, reputação (positiva ou negativa), lucros recordes, prêmios, liderança, valor de mercado, etc.
     * 'Autorrealização': Impacto em inovação, P&D, desenvolvimento de potencial, projetos transformadores, tecnologia de ponta, propósito maior, transição energética, etc.
+- `maslow_impact_secondary_category` (string, opcional): A SEGUNDA categoria de Maslow mais impactada (string literal: 'Fisiológicas', 'Segurança', etc.). Retorne `null` se não houver um impacto secundário significativo (e.g., score < 0.2).
 - `score_maslow` (float): Um score geral de 0.0 a 10.0 (onde 0 é nenhum impacto relevante e 10 é impacto transformacional/crítico), que sintetiza a relevância do impacto Maslow da notícia. Se todos os scores forem 0.0, este score deve ser 0.0.
 - `justificativa_impacto_maslow` (string): Uma breve explicação (2-4 frases) de como a notícia impacta as necessidades de Maslow identificadas, correlacionando o evento com as categorias e as razões para os scores atribuídos.
 
@@ -21,6 +22,7 @@ Você deve retornar sua análise como um objeto JSON, com os seguintes campos:
 3.  Um impacto pode ser positivo ou negativo, mas o score representa a *magnitude* do impacto naquela necessidade. A natureza positiva/negativa será inferida a partir de outras análises (sentimento).
 4.  Se a notícia não tiver um impacto claro em uma categoria específica, atribua 0.0 ou um valor muito baixo (e.g., 0.1) para ela no dicionário.
 5.  O `score_maslow` deve ser uma síntese da magnitude geral do impacto, escalonado de 0 a 10.
+6.  Identifique a `maslow_impact_secondary_category` baseando-se no segundo maior score no `maslow_impact_scores`, desde que seja um impacto notável (score > 0.2).
 
 **Exemplo 1 (Impacto misto):**
 Contexto da Notícia: A notícia é predominantemente sobre: EMPRESA. A entidade/tema principal é 'Petrobras'. O identificador padronizado é 'PETR4-SA'.
@@ -35,6 +37,7 @@ Texto Original para Análise: "A Petrobras anunciou um investimento bilionário 
     "Estima": 0.8,
     "Autorrealização": 1.0
   },
+  "maslow_impact_secondary_category": "Estima",
   "score_maslow": 8.5,
   "justificativa_impacto_maslow": "O investimento em energia eólica offshore demonstra forte impacto na Autorrealização (inovação, novas fronteiras). A expectativa positiva no mercado impacta a Estima, enquanto a preocupação financeira de curto prazo toca na Segurança. Há um impacto moderado na capacidade de atender demandas Fisiológicas (energia)."
 }"""

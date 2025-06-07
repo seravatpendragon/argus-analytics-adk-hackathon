@@ -59,7 +59,7 @@ except ImportError as e:
         settings.logger.info("Logger fallback inicializado devido a ImportError.")
 
     settings.logger.critical(f"Erro CRÍTICO ao importar módulos em run_llm_analysis_pipeline_test.py: {e}", exc_info=True)
-    settings.logger.error(f"Verifique si as pastas dos agentes e seus arquivos existem e estão acessíveis.")
+    settings.logger.error(f"Verifique se as pastas dos agentes e seus arquivos existem e estão acessíveis.")
     settings.logger.error(f"sys.path atual: {sys.path}")
     sys.exit(1)
 except Exception as e:
@@ -142,7 +142,7 @@ def parse_llm_json_response(raw_text_content, article_id, agent_name):
     json_str_content = json_str_content.strip()
 
     # settings.logger.debug(f"    DEBUG PARSER: Conteúdo FINAL a ser parseado para {agent_name} (ID {article_id}): '{json_str_content[:200]}'")
-    # settings.logger.debug(f"    DEBUG PARSER: Conteúdo RAW (repr) para {agent_name} (ID {article_id}): {repr(json_str_content[:200])}")
+    # settings.logger.logger.debug(f"    DEBUG PARSER: Conteúdo RAW (repr) para {agent_name} (ID {article_id}): {repr(json_str_content[:200])}") # Usar settings.logger aqui
 
     if not json_str_content:
         settings.logger.error(f"    Erro: Resposta vazia ou sem JSON válido do agente {agent_name} para Artigo ID {article_id}.")
@@ -279,11 +279,12 @@ async def run_llm_analysis_pipeline():
 
         # Preparar o prefixo de contexto para os sub-agentes
         context_prefix = ""
-        if entity_identification_result.get('tipo_entidade_foco'):
+        # Verifica se as chaves existem e não são None antes de tentar acessá-las
+        if entity_identification_result and entity_identification_result.get('tipo_entidade_foco'):
             context_prefix += f"A notícia é predominantemente sobre: {entity_identification_result['tipo_entidade_foco']}. "
-        if entity_identification_result.get('nome_entidade_foco'):
+        if entity_identification_result and entity_identification_result.get('nome_entidade_foco'):
             context_prefix += f"A entidade/tema principal é '{entity_identification_result['nome_entidade_foco']}'. "
-        if entity_identification_result.get('ticker_padronizado'):
+        if entity_identification_result and entity_identification_result.get('ticker_padronizado'):
             context_prefix += f"O identificador padronizado é '{entity_identification_result['ticker_padronizado']}'. "
         
         llm_input_text_for_sub_agents = f"Contexto da Notícia: {context_prefix}\n\nTexto Original para Análise:\n{content_for_llm_raw}"
@@ -309,8 +310,7 @@ async def run_llm_analysis_pipeline():
                     )
                     if sentiment_result: 
                         consolidated_llm_results["sentiment_analysis"] = sentiment_result
-                        # Acesso seguro ao campo, em caso de `None` de `get()`
-                        sentiment_status = sentiment_result.get('sentimento_central_percebido', 'N/A')
+                        sentiment_status = sentiment_result.get('sentimento_central_percebido') # Removi o default 'N/A' aqui para que o logger veja o None se for o caso
                         settings.logger.info(f"    Sentimento obtido: {sentiment_status}") 
                 break
         if not sentiment_result: settings.logger.error(f"    Falha ao obter resultado de sentimento para Artigo ID {article_id}.")
@@ -331,8 +331,8 @@ async def run_llm_analysis_pipeline():
                     )
                     if relevance_result:
                         consolidated_llm_results["relevance_type_analysis"] = relevance_result
-                        suggested_article_type = relevance_result.get('suggested_article_type', 'N/A')
-                        relevance_score_fac_ia = relevance_result.get('score_relevancia_noticia_fac_ia', 'N/A')
+                        suggested_article_type = relevance_result.get('suggested_article_type')
+                        relevance_score_fac_ia = relevance_result.get('score_relevancia_noticia_fac_ia')
                         settings.logger.info(f"    Relevância/Tipo obtido: {relevance_score_fac_ia} / {suggested_article_type}") 
                 break
         if not relevance_result: settings.logger.error(f"    Falha ao obter resultado de relevância/tipo para Artigo ID {article_id}.")
@@ -353,7 +353,7 @@ async def run_llm_analysis_pipeline():
                     )
                     if stakeholders_result:
                         consolidated_llm_results["stakeholders_analysis"] = stakeholders_result
-                        stakeholder_primary = stakeholders_result.get('stakeholder_primario_afetado', 'N/A')
+                        stakeholder_primary = stakeholders_result.get('stakeholder_primario_afetado')
                         settings.logger.info(f"    Stakeholders obtidos: {stakeholder_primary}") 
                 break
         if not stakeholders_result: settings.logger.error(f"    Falha ao obter resultado de stakeholders para Artigo ID {article_id}.")
@@ -374,7 +374,7 @@ async def run_llm_analysis_pipeline():
                     )
                     if maslow_result:
                         consolidated_llm_results["maslow_analysis"] = maslow_result
-                        maslow_scores_log = maslow_result.get('maslow_impact_scores', 'N/A')
+                        maslow_scores_log = maslow_result.get('maslow_impact_scores')
                         settings.logger.info(f"    Impacto Maslow obtido: {maslow_scores_log}") 
                 break
         if not maslow_result: settings.logger.error(f"    Falha ao obter resultado de Maslow para Artigo ID {article_id}.")
@@ -395,7 +395,7 @@ async def run_llm_analysis_pipeline():
                     )
                     if temas_palavras_chave_result:
                         consolidated_llm_results["temas_palavras_chave"] = temas_palavras_chave_result
-                        temas_list = temas_palavras_chave_result.get('principais_temas_abordados', 'N/A')
+                        temas_list = temas_palavras_chave_result.get('principais_temas_abordados')
                         settings.logger.info(f"    Temas/Palavras-Chave obtidos: {temas_list}") 
                 break
         if not temas_palavras_chave_result: settings.logger.error(f"    Falha ao obter resultado de Temas/Palavras-Chave para Artigo ID {article_id}.")
@@ -416,7 +416,7 @@ async def run_llm_analysis_pipeline():
                     )
                     if resumo_result:
                         consolidated_llm_results["resumo_llm"] = resumo_result 
-                        resumo_text = resumo_result.get('resumo_estruturado', 'N/A')
+                        resumo_text = resumo_result.get('resumo_estruturado')
                         settings.logger.info(f"    Resumo LLM obtido: {resumo_text[:50]}...") 
                 break
         if not resumo_result: settings.logger.error(f"    Falha ao obter resultado de Resumo para Artigo ID {article_id}.")
@@ -432,7 +432,7 @@ async def run_llm_analysis_pipeline():
         consolidator_payload = {
             "news_article_id": article_id,
             "llm_analysis_json": consolidated_llm_results,
-            "suggested_article_type": suggested_article_type # Use o que foi definido ou None
+            "suggested_article_type": suggested_article_type 
         }
         consolidator_input_content = types.Content(role='user', parts=[types.Part(text=json.dumps(consolidator_payload))])
 
@@ -453,8 +453,6 @@ async def run_llm_analysis_pipeline():
         
         consolidator_final_status = {"status": "error", "message": "Consolidador não gerou JSON de parâmetros válido."}
 
-        # Só tenta atualizar o banco de dados se houver resultados de análise E parâmetros válidos do consolidador
-        # E se o llm_analysis_json dentro do consolidador_params_json não for None/vazio
         if consolidated_llm_results and consolidator_params_json and consolidator_params_json.get('llm_analysis_json'): 
             try:
                 class TempToolContextForManualCall:

@@ -823,14 +823,16 @@
         "feed_url": "https://news.google.com/rss/search?q=when:24h+allinurl:moneytimes.com.br&hl=pt-PT&gl=PT&ceid=PT:pt-150",
         "category": "Feed Agregado Google News - MoneyTimes",
         "target_company_ticker": null,
-        "target_segment_name": null
+        "target_segment_name": null,
+        "publisher_domain_override": "moneytimes.com.br"
     },
     {
         "source_name": "Bloomberg (Google News 24h)",
         "feed_url": "https://news.google.com/rss/search?q=when:24h+allinurl:bloomberg.com&hl=en-US&gl=US&ceid=US:en",
         "category": "Feed Agregado Google News - Bloomberg",
         "target_company_ticker": null,
-        "target_segment_name": null
+        "target_segment_name": null,
+        "publisher_domain_override": "bloomberg.com"
     },
     {
         "source_name": "InvestNews(Google News 24h)",

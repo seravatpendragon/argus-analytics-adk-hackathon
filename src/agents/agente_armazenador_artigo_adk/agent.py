@@ -63,20 +63,6 @@ persist_tool_adk_instance = FunctionTool(func=tool_persist_news_or_cvm_document)
 
 # --- Definição do Agente ---
 AgenteArmazenadorArtigo_ADK = Agent(
-logger.info(f'Modelo LLM para o agente {Path(__file__).name} (AgenteArmazenadorArtigo_ADK (Nome não extraído)): {MODELO_LLM_AGENTE}')
-logger.info(f'Definição do Agente AgenteArmazenadorArtigo_ADK (Nome não extraído) carregada com sucesso em {Path(__file__).name}.')
-logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
-logger.info(f"Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.")
-logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
-logger.info(f"Definição do Agente {AgenteArmazenadorArtigo_ADK.name} carregada com sucesso em {Path(__file__).name}.")
     name="agente_armazenador_artigo_adk_v1",
     model=MODELO_LLM_AGENTE,
     description=(

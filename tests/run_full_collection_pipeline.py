@@ -1,12 +1,15 @@
-# run_llm_analysis_pipeline_test.py
+# run_full_collection_pipeline.py
 
 import os
 import sys
 from pathlib import Path
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import math 
 import asyncio 
 import re 
+import hashlib 
+from typing import Dict, Any, Optional, List # Import para typing
 
 # --- Configuração de Caminhos para Imports do Projeto ---
 try:
@@ -14,383 +17,306 @@ try:
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent 
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para run_llm_analysis_pipeline_test.py.")
+    print(f"PROJECT_ROOT ({PROJECT_ROOT}) foi adicionado/confirmado no sys.path para run_full_collection_pipeline.py.")
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    print(f"AVISO (run_llm_analysis_pipeline_test.py): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
+    print(f"AVISO (run_full_collection_pipeline.py): __file__ não definido. Usando PROJECT_ROOT como: {PROJECT_ROOT}")
 
 src_path = PROJECT_ROOT / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
     print(f"src_path ({src_path}) foi adicionado/confirmado no sys.path.")
 
+# --- Importações de Módulos ---
 try:
     from config import settings
+    
+    # Importar o Agente Coletor de Dados (Agente LLM)
+    from agents.agente_orquestrador_coleta_adk.agent import AgenteColetorDados_ADK
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
     from google.genai import types 
-    
-    # Importa a ferramenta de busca de artigos pendentes
-    from agents.agente_gerenciador_analise_llm_adk.tools.tool_fetch_pending_articles import tool_fetch_pending_articles
 
-    # Importa os agentes (o gerenciador e os sub-agentes de análise)
-    from agents.agente_gerenciador_analise_llm_adk.agent import AgenteGerenciadorDeAnaliseLLM_ADK
-    from agents.sub_agente_sentimento_adk.agent import SubAgenteSentimento_ADK
-    from agents.sub_agente_relevancia_tipo_adk.agent import SubAgenteRelevanciaTipo_ADK
-    from agents.sub_agente_stakeholders_adk.agent import SubAgenteStakeholders_ADK
-    from agents.sub_agente_impacto_maslow_adk.agent import SubAgenteImpactoMaslow_ADK
-    from agents.agente_consolidador_analise_adk.agent import AgenteConsolidadorDeAnalise_ADK 
-    
-    # NOVO: Importar o Agente Identificador de Entidade
-    from agents.sub_agente_identificador_entidade_adk.agent import SubAgenteIdentificadorDeEntidade_ADK
-    # NOVO: Importar a ferramenta de padronização (se for chamá-la manualmente no script)
-    from agents.sub_agente_identificador_entidade_adk.tools.tool_identify_entity_ticker import tool_identify_entity_ticker
+    # IMPORTAÇÕES DAS FERRAMENTAS REAIS DE COLETA (Para serem usadas no TOOL_FUNCTION_MAP)
+    from agents.agente_coletor_newsapi_adk.tools.tool_collect_newsapi_articles import tool_collect_newsapi_articles
+    from agents.agente_coletor_rss_adk.tools.tool_collect_rss_articles import tool_collect_rss_articles
+    from agents.agente_coletor_regulatorios_adk.tools.ferramenta_downloader_cvm import tool_download_cvm_data
+    from agents.agente_coletor_regulatorios_adk.tools.ferramenta_processador_ipe import tool_process_cvm_ipe_local
 
-    # Importa a ferramenta de persistência para chamá-la manualmente
-    from agents.agente_consolidador_analise_adk.tools.tool_update_article_analysis import tool_update_article_analysis
+    # Ferramentas de pré-processamento e persistência (Python)
+    from agents.agente_pre_processador_noticia_adk.tools.tool_preprocess_metadata import tool_preprocess_article_metadata
+    from agents.agente_de_credibilidade_adk.tools.tool_get_source_credibility import tool_get_source_credibility
+    from agents.agente_de_fonte_noticia_adk.tools.tool_ensure_news_source_in_db import tool_ensure_news_source_in_db
+    from agents.agente_armazenador_artigo_adk.tools.tool_persist_data import tool_persist_news_or_cvm_document
 
-    print("Módulos de agentes e ferramentas importados com sucesso.")
+    print("Módulos de todos os agentes e ferramentas importados com sucesso.")
 
 except ImportError as e:
-    if 'settings' not in locals() and 'settings' in globals():
+    if not hasattr(settings, 'logger'): 
         import logging
         log_format = '%(asctime)s - %(levelname)s - %(name)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s'
         logging.basicConfig(level=logging.INFO, format=log_format)
-        _fb_logger = logging.getLogger("llm_analysis_test_logger_fallback")
+        _fb_logger = logging.getLogger("full_pipeline_test_logger_fallback")
         settings = type('SettingsFallback', (), {'logger': _fb_logger})()
 
-    settings.logger.error(f"Erro CRÍTICO ao importar módulos em run_llm_analysis_pipeline_test.py: {e}")
+    settings.logger.critical(f"Erro CRÍTICO ao importar módulos em run_full_collection_pipeline.py: {e}", exc_info=True)
     settings.logger.error(f"Verifique se as pastas dos agentes e seus arquivos existem e estão acessíveis.")
     settings.logger.error(f"sys.path atual: {sys.path}")
     sys.exit(1)
 except Exception as e:
-    if 'settings' not in locals() and 'settings' in globals():
+    if not hasattr(settings, 'logger'): 
         import logging
         log_format = '%(asctime)s - %(levelname)s - %(name)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s'
         logging.basicConfig(level=logging.INFO, format=log_format)
-        _fb_logger = logging.getLogger("llm_analysis_test_logger_fallback2")
+        _fb_logger = logging.getLogger("full_pipeline_test_logger_fallback2")
         settings = type('SettingsFallback', (), {'logger': _fb_logger})()
 
-    settings.logger.error(f"Erro INESPERADO durante imports iniciais em run_llm_analysis_pipeline_test.py: {e}")
+    settings.logger.critical(f"Erro INESPERADO durante imports iniciais em run_full_collection_pipeline.py: {e}", exc_info=True)
     sys.exit(1)
 
 if not hasattr(settings, 'logger'):
-    import logging
-    log_format = '%(asctime)s - %(levelname)s - %(name)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_format)
-    settings.logger = logging.getLogger("llm_analysis_test_logger")
-    settings.logger.info("Logger fallback inicializado em run_llm_analysis_pipeline_test.py.")
+    settings.logger = logging.getLogger("full_pipeline_test_logger")
+    settings.logger.info("Logger fallback inicializado em run_full_collection_pipeline.py.")
 
 
-settings.logger.info("--- INICIANDO TESTE DE INTEGRAÇÃO SIMULADO: Pipeline de Análise LLM ---")
+settings.logger.info("--- INICIANDO TESTE DE INTEGRAÇÃO SIMULADO: Pipeline COMPLETO de Coleta e Processamento ---")
 
-# --- Configuração da API Key do Google AI Studio ---
-gemini_api_key = getattr(settings, "GEMINI_API_KEY", None)
+# --- Mapeamento GLOBAL de nomes de ferramentas para funções (para execução manual pelo orquestrador) ---
+# Este mapa contém as *referências* às funções Python que o Agente Coletor *pode* pedir para executar.
+# A chave é o nome que o LLM usará no tool_code, o valor é a função Python real.
+TOOL_FUNCTION_MAP = {
+    "tool_collect_newsapi_articles": tool_collect_newsapi_articles,
+    "tool_collect_rss_articles": tool_collect_rss_articles,
+    "tool_download_cvm_data": tool_download_cvm_data,
+    "tool_process_cvm_ipe_local": tool_process_cvm_ipe_local,
+}
 
-if not gemini_api_key:
-    settings.logger.critical("ERRO: GEMINI_API_KEY não definida em config/settings.py! A análise LLM falhará. Por favor, defina-a.")
-    sys.exit(1)
+# --- Mock ToolContext para simular o estado da sessão (para ferramentas Python) ---
+class SimpleTestToolContext:
+    """A simple mock class for tool_context to simulate session state."""
+    def __init__(self):
+        self.state = {} # Simulates the session state dictionary
 
-os.environ["GOOGLE_API_KEY"] = gemini_api_key
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False" # Garante que use a API pública, não o Vertex AI
-
-settings.logger.info("GEMINI_API_KEY carregada de settings.py. Usando Google AI API (não Vertex AI).")
-
-
-# --- Setup do Runner e Session Service do ADK ---
-APP_NAME = "argus_llm_analysis"
-USER_ID = "test_user_llm"
-SESSION_ID = "test_session_llm_001"
-
-
-async def run_llm_analysis_pipeline():
-    session_service = InMemorySessionService()
-    session = await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
-    settings.logger.info(f"ADK Session criada: App='{APP_NAME}', User='{USER_ID}', Session='{SESSION_ID}'")
-
-    # Instanciar os Runners para cada sub-agente de análise e para o Consolidador
-    entity_identifier_agent_runner = Runner(
-        agent=SubAgenteIdentificadorDeEntidade_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    sentiment_agent_runner = Runner(
-        agent=SubAgenteSentimento_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    relevance_type_agent_runner = Runner(
-        agent=SubAgenteRelevanciaTipo_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    stakeholders_agent_runner = Runner(
-        agent=SubAgenteStakeholders_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    maslow_agent_runner = Runner(
-        agent=SubAgenteImpactoMaslow_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    consolidator_agent_runner = Runner(
-        agent=AgenteConsolidadorDeAnalise_ADK,
-        app_name=APP_NAME,
-        session_service=session_service
-    )
-    settings.logger.info(f"Runners para sub-agentes de análise e consolidador criados.")
+mock_session_state_context = SimpleTestToolContext() 
+settings.logger.info(f"MockToolContext para estado da sessão inicializado. Estado: {mock_session_state_context.state}")
 
 
-    settings.logger.info("\n--- FASE 1: Buscar Artigos Pendentes ---")
-    fetch_result = tool_fetch_pending_articles(limit=3) 
-    if fetch_result.get("status") == "error":
-        settings.logger.error(f"Falha ao buscar artigos pendentes: {fetch_result.get('message')}")
+# --- FUNÇÃO AUXILIAR PARA EXECUTAR O PIPELINE DE PROCESSAMENTO PARA UM ÚNICO ITEM ---
+def run_processing_pipeline_for_item(item_data: Dict[str, Any], item_type: str):
+    """
+    Executa o pipeline de pré-processamento e persistência para um único item coletado.
+    """
+    item_title = item_data.get('title')
+    item_headline = item_data.get('headline')
+
+    if isinstance(item_title, float) and math.isnan(item_title):
+        item_title = None
+    if isinstance(item_headline, float) and math.isnan(item_headline):
+        item_headline = None
+
+    display_title = item_title or item_headline or 'Sem Título'
+    settings.logger.info(f"\n--- Processando {item_type}: {str(display_title)[:70]}... ---")
+
+    # 1. Pré-processamento de metadados
+    settings.logger.info("  Chamando tool_preprocess_article_metadata...")
+    processed_data_result = tool_preprocess_article_metadata(raw_article_data=item_data)
+    if processed_data_result.get("status") == "error":
+        settings.logger.error(f"  Pré-processamento falhou: {processed_data_result.get('message')}")
         return
 
-    articles_to_analyze = fetch_result.get("articles_data", [])
-    settings.logger.info(f"DEBUG_PIPELINE: tool_fetch_pending_articles retornou {len(articles_to_analyze)} artigos para processar.")
-
-    if not articles_to_analyze:
-        settings.logger.warning("Nenhum artigo pendente encontrado para análise LLM. Encerrando.")
+    # 2. Obtenção de Credibilidade da Fonte
+    settings.logger.info("  Chamando tool_get_source_credibility...")
+    credibility_data_result = tool_get_source_credibility(
+        source_domain=processed_data_result.get("source_domain"),
+        source_name_raw=processed_data_result.get("source_name_raw")
+    )
+    if not credibility_data_result or not credibility_data_result.get("source_name_curated") or credibility_data_result.get("base_credibility_score") is None: 
+        settings.logger.error(f"  Obtenção de credibilidade falhou ou retornou dados incompletos para {processed_data_result.get('source_name_raw')}.")
         return
-
-    settings.logger.info(f"Encontrados {len(articles_to_analyze)} artigos pendentes para análise LLM.")
-
-    settings.logger.info("\n--- FASE 2: Delegar Anßlise LLM e Consolidar Resultados ---")
     
-    analyzed_articles_count = 0 
+    # 3. Garantir NewsSource no DB
+    settings.logger.info("  Chamando tool_ensure_news_source_in_db...")
+    source_db_data_result = tool_ensure_news_source_in_db(
+        source_name_curated=credibility_data_result.get("source_name_curated"),
+        source_domain=credibility_data_result.get("source_domain"),
+        base_credibility_score=credibility_data_result.get("base_credibility_score"),
+        loaded_credibility_data=credibility_data_result.get("loaded_credibility_data"), 
+        tool_context=mock_session_state_context
+    )
+    if source_db_data_result.get("status") == "error":
+        settings.logger.error(f"  Garantia de NewsSource no DB falhou: {source_db_data_result.get('message')}")
+        return
 
-    for article in articles_to_analyze:
-        article_id = article.get("news_article_id")
-        headline = article.get("headline", "Sem Título")
-        content_for_llm_raw = article.get("full_text") or article.get("summary") or article.get("headline")
+    # 4. Persistência Final do Artigo/Documento no DB
+    settings.logger.info("  Chamando tool_persist_news_or_cvm_document...")
+    final_article_data = processed_data_result.copy()
+    final_article_data["news_source_id"] = source_db_data_result.get("news_source_id")
+    final_article_data.pop("status", None) 
+    final_article_data.pop("message", None)
+    
+    final_article_data['processing_status'] = 'pending_llm_analysis'
 
-        if not content_for_llm_raw:
-            settings.logger.warning(f"Artigo ID {article_id} não possui conteúdo para análise. Pulando.")
-            continue
+    persist_result = tool_persist_news_or_cvm_document(
+        article_data=final_article_data,
+        tool_context=mock_session_state_context 
+    )
 
-        settings.logger.info(f"  Processando Artigo ID {article_id}: '{headline[:50]}...'")
+    if persist_result.get("status") == "success":
+        settings.logger.info(f"  Item persistido com sucesso! ID: {persist_result.get('news_article_id')}")
+    else:
+        settings.logger.error(f"  Persistência falhou: {persist_result.get('message')}")
+
+
+# --- FUNÇÃO PRINCIPAL PARA EXECUTAR O PIPELINE COMPLETO ---
+async def run_full_collection_pipeline_async():
+    settings.logger.info("\n--- FASE 1: Coletando Dados Brutos de Múltiplas Fontes (via Agente Coletor) ---")
+    
+    session_service = InMemorySessionService()
+    session = await session_service.create_session(app_name="argus_collector", user_id="collector_user", session_id="collector_session_001")
+    
+    collector_agent_runner = Runner(
+        agent=AgenteColetorDados_ADK,
+        app_name="argus_collector",
+        session_service=session_service
+    )
+
+    initial_collection_prompt = types.Content(role='user', parts=[types.Part(text="Inicie a coleta de todos os dados financeiros recentes.")])
+    
+    settings.logger.info("  Invocando AgenteColetorDados_ADK para coletar dados...")
+    all_raw_articles = []
+    
+    events = collector_agent_runner.run_async(
+        user_id="collector_user",
+        session_id="collector_session_001",
+        new_message=initial_collection_prompt
+    )
+
+    async for event in events:
+        # Primeiro, trate as tool_responses que já vêm executadas (se o Runner funcionar assim)
+        if hasattr(event, 'tool_response') and event.tool_response:
+            tool_result = event.tool_response.response
+            if tool_result.get("status") == "success":
+                if "articles_data" in tool_result:
+                    all_raw_articles.extend(tool_result["articles_data"])
+                    settings.logger.info(f"  Adicionados {len(tool_result['articles_data'])} artigos via {event.tool_response.name}.")
+                elif "novos_documentos" in tool_result:
+                    all_raw_articles.extend(tool_result["novos_documentos"]) 
+                    settings.logger.info(f"  Adicionados {len(tool_result['novos_documentos'])} documentos via {event.tool_response.name}.")
+            else:
+                settings.logger.error(f"  Ferramenta de coleta {event.tool_response.name} falhou: {tool_result.get('message')}")
         
-        consolidated_llm_results = {}
-        suggested_article_type = None 
-        
-        # --- NOVO: Chamada ao SubAgenteIdentificadorDeEntidade_ADK ---
-        settings.logger.info("    Chamando SubAgenteIdentificadorDeEntidade_ADK...")
-        entity_input_content = types.Content(role='user', parts=[types.Part(text=content_for_llm_raw)])
-        events_entity_id = entity_identifier_agent_runner.run_async(
-            user_id=USER_ID,
-            session_id=SESSION_ID,
-            new_message=entity_input_content
-        )
-        entity_identification_result = None
-        async for event in events_entity_id:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
+        # Em seguida, se o Runner retornou tool_code (e não executou), execute manualmente
+        elif hasattr(event, 'tool_code') and event.tool_code:
+            settings.logger.warning(f"  Agente Coletor gerou tool_code: {event.tool_code[:100]}... Executando manualmente.")
+            
+            tool_call_str = event.tool_code
+            match = re.match(r"(\w+)\((.*)\)", tool_call_str)
+            if match:
+                tool_name = match.group(1)
+                tool_args_str = match.group(2)
+                
+                tool_kwargs = {}
+                # Parse the arguments string using eval (with caution)
+                if tool_args_str.strip(): 
                     try:
-                        entity_identification_result = json.loads(event.content.parts[0].text)
-                        settings.logger.info(f"    Identificação de Entidade obtida: {entity_identification_result.get('nome_entidade_foco')}")
+                        tool_kwargs = eval(f"dict({tool_args_str})", {}, {}) 
+                    except Exception as e_eval:
+                        settings.logger.error(f"    Erro eval() ao parsear args de '{tool_name}': {e_eval}. Args string: '{tool_args_str[:100]}'")
+                        tool_kwargs = {} 
+                
+                if tool_name in TOOL_FUNCTION_MAP:
+                    try:
+                        mock_context = SimpleTestToolContext() 
+                        executed_tool_result = TOOL_FUNCTION_MAP[tool_name](**tool_kwargs, tool_context=mock_context)
                         
-                        # NOVO: Padronizar o ticker/identificador usando a ferramenta Python
-                        class TempToolContextForToolCall: 
-                            def __init__(self):
-                                self.state = {}
-                        temp_tool_context_for_tool_call = TempToolContextForToolCall()
-
-                        standardized_id_result = tool_identify_entity_ticker(
-                            entity_name_raw=entity_identification_result.get('nome_entidade_foco'),
-                            entity_type=entity_identification_result.get('tipo_entidade_foco'),
-                            tool_context=temp_tool_context_for_tool_call 
-                        )
-                        if standardized_id_result.get("status") == "success":
-                            entity_identification_result['ticker_padronizado'] = standardized_id_result.get('padronizado_identificador')
-                            settings.logger.info(f"    Ticker/Identificador padronizado para: {entity_identification_result['ticker_padronizado']}")
+                        if executed_tool_result.get("status") == "success":
+                            if "articles_data" in executed_tool_result:
+                                all_raw_articles.extend(executed_tool_result["articles_data"])
+                                settings.logger.info(f"  Adicionados {len(executed_tool_result['articles_data'])} artigos via {tool_name} (execução manual).")
+                            elif "novos_documentos" in executed_tool_result:
+                                all_raw_articles.extend(executed_tool_result["novos_documentos"])
+                                settings.logger.info(f"  Adicionados {len(executed_tool_result['novos_documentos'])} documentos via {tool_name} (execução manual).")
                         else:
-                            settings.logger.warning(f"    Falha ao padronizar ticker: {standardized_id_result.get('message')}. Usando sugerido.")
-                        
-                        consolidated_llm_results["entity_identification"] = entity_identification_result
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Identificação de Entidade para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not entity_identification_result: 
-            settings.logger.error(f"    Falha ao obter identificação de entidade para Artigo ID {article_id}. Pulando análises dependentes.")
-            continue 
+                            settings.logger.error(f"  Ferramenta {tool_name} (execução manual) falhou: {executed_tool_result.get('message')}")
 
-        # Preparar o contexto para os sub-agentes INJETANDO NO TEXTO DO PROMPT
-        # Construa o prefixo de contexto que será adicionado ao input de texto de cada sub-agente
-        context_prefix = ""
-        if entity_identification_result.get('tipo_entidade_foco'):
-            context_prefix += f"A notícia é predominantemente sobre: {entity_identification_result['tipo_entidade_foco']}. "
-        if entity_identification_result.get('nome_entidade_foco'):
-            context_prefix += f"A entidade/tema principal é '{entity_identification_result['nome_entidade_foco']}'. "
-        if entity_identification_result.get('ticker_padronizado'):
-            context_prefix += f"O identificador padronizado é '{entity_identification_result['ticker_padronizado']}'. "
+                    except Exception as e_execute:
+                        settings.logger.error(f"    Erro ao executar ferramenta {tool_name} manualmente: {e_execute}", exc_info=True)
+                else:
+                    settings.logger.error(f"    Ferramenta '{tool_name}' não mapeada para execução manual.")
+            else:
+                settings.logger.error(f"  Não foi possível parsear tool_code: '{tool_call_str[:100]}'")
+
+        elif event.is_final_response():
+            settings.logger.info(f"  Agente Coletor finalizou com resposta: {event.content.parts[0].text[:100]}...")
         
-        # O input de texto real para os sub-agentes agora tem o contexto no início.
-        llm_input_text_for_sub_agents = f"Contexto da Notícia: {context_prefix}\n\nTexto Original para Análise:\n{content_for_llm_raw}"
+    settings.logger.info(f"\nTotal de itens coletados pelo Agente Coletor no teste: {len(all_raw_articles)}")
+
+
+    settings.logger.info("\n--- FASE 2: Iniciando Processamento e Persistência dos Dados Coletados ---")
+
+    if not all_raw_articles:
+        settings.logger.warning("Nenhum artigo/documento bruto coletado para processar. Encerrando pipeline.")
+    else:
+        # ATENÇÃO: test_run_identifier é usado para MOCKS.
+        # Para garantir que os links mockados sejam determinísticos entre execuções,
+        # e assim o UPSERT funcione para mocks, use um hash do conteúdo.
+        # A lógica de geração de URL determinística já está no ferramenta_processador_ipe.py
+        # e no run_full_collection_pipeline (para mocks NewsAPI/RSS).
         
-        # O Content para os sub-agentes contém apenas o texto já formatado.
-        llm_input_content_for_sub_agents = types.Content(
-            role='user', 
-            parts=[types.Part(text=llm_input_text_for_sub_agents)]
-        )
-
-        # --- Chamada ao SubAgenteSentimento_ADK ---
-        settings.logger.info("    Chamando SubAgenteSentimento_ADK...")
-        events_sentiment = sentiment_agent_runner.run_async(
-            user_id=USER_ID, 
-            session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
-        )
-        sentiment_result = None
-        async for event in events_sentiment:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    try:
-                        sentiment_result = json.loads(event.content.parts[0].text)
-                        consolidated_llm_results["sentiment_analysis"] = sentiment_result
-                        settings.logger.info(f"    Sentimento obtido: {sentiment_result.get('sentimento_central_percebido')}") 
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Sentimento para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not sentiment_result: settings.logger.error(f"    Falha ao obter resultado de sentimento para Artigo ID {article_id}.")
-
-        # --- Chamada ao SubAgenteRelevanciaTipo_ADK ---
-        settings.logger.info("    Chamando SubAgenteRelevanciaTipo_ADK...")
-        events_relevance = relevance_type_agent_runner.run_async(
-            user_id=USER_ID, 
-            session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
-        )
-        relevance_result = None
-        async for event in events_relevance:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    try:
-                        relevance_result = json.loads(event.content.parts[0].text)
-                        consolidated_llm_results["relevance_type_analysis"] = relevance_result
-                        suggested_article_type = relevance_result.get("suggested_article_type")
-                        settings.logger.info(f"    Relevância/Tipo obtido: {relevance_result.get('score_relevancia_noticia_fac_ia')} / {suggested_article_type}") 
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Relevância/Tipo para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not relevance_result: settings.logger.error(f"    Falha ao obter resultado de relevância/tipo para Artigo ID {article_id}.")
-
-        # --- Chamada ao SubAgenteStakeholders_ADK ---
-        settings.logger.info("    Chamando SubAgenteStakeholders_ADK...")
-        events_stakeholders = stakeholders_agent_runner.run_async(
-            user_id=USER_ID, 
-            session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
-        )
-        stakeholders_result = None
-        async for event in events_stakeholders:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    try:
-                        stakeholders_result = json.loads(event.content.parts[0].text)
-                        consolidated_llm_results["stakeholders_analysis"] = stakeholders_result
-                        settings.logger.info(f"    Stakeholders obtidos: {stakeholders_result.get('stakeholder_primario_afetado')}") 
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Stakeholders para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not stakeholders_result: settings.logger.error(f"    Falha ao obter resultado de stakeholders para Artigo ID {article_id}.")
-
-        # --- Chamada ao SubAgenteImpactoMaslow_ADK ---
-        settings.logger.info("    Chamando SubAgenteImpactoMaslow_ADK...")
-        events_maslow = maslow_agent_runner.run_async(
-            user_id=USER_ID, 
-            session_id=SESSION_ID, 
-            new_message=llm_input_content_for_sub_agents 
-        )
-        maslow_result = None
-        async for event in events_maslow:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    try:
-                        maslow_result = json.loads(event.content.parts[0].text)
-                        consolidated_llm_results["maslow_analysis"] = maslow_result
-                        settings.logger.info(f"    Impacto Maslow obtido: {maslow_result.get('maslow_impact_scores')}") 
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de Maslow para Artigo ID {article_id}: {e}. Conteúdo: {event.content.parts[0].text[:100]}...")
-                break
-        if not maslow_result: settings.logger.error(f"    Falha ao obter resultado de Maslow para Artigo ID {article_id}.")
-
-        # --- Chamada ao AgenteConsolidadorDeAnalise_ADK para gerar JSON de parâmetros ---
-        settings.logger.info("    Chamando AgenteConsolidadorDeAnalise_ADK para gerar JSON de parâmetros...")
+        # Este loop é essencial para garantir que cada item_data passado para o
+        # run_processing_pipeline_for_item tenha uma chave de link determinística.
         
-        consolidator_payload = {
-            "news_article_id": article_id,
-            "llm_analysis_json": consolidated_llm_results,
-            "suggested_article_type": suggested_article_type
-        }
-        consolidator_input_content = types.Content(role='user', parts=[types.Part(text=json.dumps(consolidator_payload))])
+        for idx, item in enumerate(all_raw_articles):
+            # A lógica para gerar URLs determinísticas para MOCKS já está
+            # no run_full_collection_pipeline (no loop async for event in events:).
+            # No entanto, se o item já vem com uma URL determinística (CVM com protocolo_id),
+            # não precisamos modificar aqui.
+            
+            # Garante que o item_data que será passado para run_processing_pipeline_for_item
+            # tenha a chave 'article_link' preenchida com a URL a ser usada no UPSERT.
+            if item.get("source_type") == "NewsAPI":
+                # Prefere 'url' se disponível, senão tenta criar uma hash
+                if item.get("url"):
+                    item["article_link"] = item["url"]
+                else:
+                    content_hash = hashlib.md5(item.get("title", "").encode('utf-8') + item.get("description", "").encode('utf-8')).hexdigest()
+                    item["article_link"] = f"http://mock.com/newsapi/article_{content_hash}"
+                    settings.logger.warning(f"  NewsAPI mock sem URL, gerado link determinístico: {item['article_link']}")
+            elif item.get("source_type") == "RSS":
+                if item.get("link"):
+                    item["article_link"] = item["link"]
+                else:
+                    content_hash = hashlib.md5(item.get("title", "").encode('utf-8') + item.get("summary", "").encode('utf-8')).hexdigest()
+                    item["article_link"] = f"http://mock.com/rss_feed/article_{content_hash}"
+                    settings.logger.warning(f"  RSS mock sem Link, gerado link determinístico: {item['article_link']}")
+            elif item.get("source_type") == "CVM_IPE":
+                # Para CVM, a ferramenta processadora_ipe já deveria ter preenchido 'document_url'
+                # e 'protocol_id'. A 'article_link' aqui vai ser o 'document_url' da ferramenta processadora.
+                item["article_link"] = item.get("document_url")
+                # Se ainda estiver None, isso é um erro na ferramenta processadora_ipe
+                if not item["article_link"]:
+                     settings.logger.error(f"  CVM_IPE mock sem document_url válido. Persistência pode falhar para: {item.get('title')}")
+                     # Fallback de último recurso (pode causar duplicação se o hash do item for igual)
+                     item["article_link"] = f"urn:cvm:doc_hash_fallback:{hashlib.md5(str(item.get('title', '')).encode('utf-8') + str(item.get('protocol_id', '')).encode('utf-8')).hexdigest()}"
 
-        events_consoli = consolidator_agent_runner.run_async(
-            user_id=USER_ID,
-            session_id=SESSION_ID,
-            new_message=consolidator_input_content
-        )
-        
-        consolidator_params_json = None
-        async for event in events_consoli:
-            if event.is_final_response():
-                if event.content and event.content.parts and event.content.parts[0].text:
-                    raw_json_text = event.content.parts[0].text.strip()
-                    match = re.search(r"```(?:json)?\s*\n(.*)\n```", raw_json_text, re.DOTALL)
-                    if match:
-                        raw_json_text = match.group(1).strip()
-                    
-                    try:
-                        consolidator_params_json = json.loads(raw_json_text)
-                        settings.logger.info(f"    Consolidador gerou JSON de parâmetros para persistência.")
-                    except json.JSONDecodeError as e:
-                        settings.logger.error(f"    Erro ao parsear JSON de parâmetros do Consolidador para Artigo ID {article_id}: {e}. Conteúdo: {raw_json_text[:100]}...")
-                break
-        
-        consolidator_final_status = {"status": "error", "message": "Consolidador não gerou JSON de parâmetros válido."}
 
-        if consolidated_llm_results and consolidator_params_json: 
-            try:
-                class TempToolContextForManualCall:
-                    def __init__(self):
-                        self.state = {}
-                temp_tool_context = TempToolContextForManualCall()
+        for idx, item_data in enumerate(all_raw_articles):
+            run_processing_pipeline_for_item(item_data, f"Item {idx+1}/{len(all_raw_articles)}")
 
-                manual_tool_call_result = tool_update_article_analysis(
-                    news_article_id=consolidator_params_json.get('news_article_id'),
-                    llm_analysis_json=consolidator_params_json.get('llm_analysis_json'),
-                    suggested_article_type=consolidator_params_json.get('suggested_article_type'),
-                    tool_context=temp_tool_context 
-                )
-                consolidator_final_status = manual_tool_call_result 
-                settings.logger.info(f"    Chamada manual da ferramenta de persistência: {consolidator_final_status.get('message')}")
-
-            except Exception as e:
-                settings.logger.error(f"    Erro na chamada manual da ferramenta de persistência para Artigo ID {article_id}: {e}", exc_info=True)
-                consolidator_final_status = {"status": "error", "message": f"Erro na chamada manual da ferramenta: {e}"}
-
-        
-        if not consolidator_final_status or consolidator_final_status.get("status") != "success":
-            settings.logger.error(f"  Falha na consolidação/persistência para Artigo ID {article_id}. Resultado: {consolidator_final_status}")
-        else:
-            settings.logger.info(f"  Análise LLM COMPLETA e persistida para Artigo ID {article_id}!")
-            analyzed_articles_count += 1 
-
-    settings.logger.info(f"\n--- FASE 2 CONCLUÍDA: {analyzed_articles_count} artigos analisados e persistidos. ---") 
-    settings.logger.info("\n--- TESTE DE INTEGRAÇÃO SIMULADO: Pipeline de Anßlise LLM CONCLUÍDO ---")
+    settings.logger.info("\n--- TESTE DE INTEGRAÇÃO SIMULADO: Pipeline COMPLETO de Coleta e Processamento CONCLUÍDO ---")
 
 
 # --- Executar a função assíncrona ---
 if __name__ == "__main__":
     try:
-        asyncio.run(run_llm_analysis_pipeline())
+        asyncio.run(run_full_collection_pipeline_async())
     except RuntimeError as e:
         if "cannot run an event loop while another event loop is running" in str(e):
             settings.logger.warning("Detectado ambiente com loop de eventos já em execução (ex: Jupyter/Colab). Tentando executar com await.")
         else:
             raise e
     except Exception as e:
-        settings.logger.critical(f"Erro fatal durante a execução do pipeline de análise LLM: {e}", exc_info=True)
+        settings.logger.critical(f"Erro fatal durante a execução do pipeline de coleta: {e}", exc_info=True)
+

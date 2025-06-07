@@ -4,143 +4,91 @@ import os
 import sys
 from pathlib import Path
 import json
-from datetime import datetime
-import logging
+import asyncio
 
-# --- Configuração de Caminhos para Imports do Projeto ---
+# --- Configuração de Caminhos e Imports ---
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent # Sobe 3 níveis
+    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
+
 try:
     from config import settings
     from google.adk.agents import Agent
     from google.adk.tools import FunctionTool
-    
-    # Importa a ferramenta de coleta NewsAPI
+    from google.adk.runners import Runner
+    from google.adk.sessions import InMemorySessionService
+    from google.genai import types
     from .tools.tool_collect_newsapi_articles import tool_collect_newsapi_articles
-
-    # Importa o prompt local
     from . import prompt as agente_prompt
-
-    # Fallback do logger se settings.logger não estiver disponível
-    if not hasattr(settings, 'logger'):
-        import logging
-        log_format = '%(asctime)s - %(levelname)s - %(name)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s'
-        logging.basicConfig(level=logging.INFO, format=log_format)
-        settings.logger = logging.getLogger("agente_coletor_newsapi_adk_fb_logger")
-        settings.logger.info("Logger fallback inicializado em agent.py.")
-    settings.logger.info("Módulos do projeto e ADK importados com sucesso para AgenteColetorNewsAPI_ADK.")
 except ImportError as e:
-    settings.logger.error(f"Erro CRÍTICO em agent.py (AgenteColetorNewsAPI_ADK) ao importar módulos: {e}")
-    settings.logger.error(f"PROJECT_ROOT calculado: {PROJECT_ROOT}")
-    settings.logger.error(f"sys.path atual: {sys.path}")
-    sys.exit(1)
-except Exception as e:
-    settings.logger.error(f"Erro INESPERADO durante imports iniciais em agent.py (AgenteColetorNewsAPI_ADK): {e}")
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    _logger = logging.getLogger(__name__)
+    _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorNewsAPI_ADK: {e}")
     sys.exit(1)
 
-# --- Definição do Modelo LLM a ser usado por este agente ---
-MODELO_LLM_AGENTE = "gemini-2.0-flash-001" 
-settings.logger.info(f"Modelo LLM para AgenteColetorNewsAPI_ADK: {MODELO_LLM_AGENTE}")
+# --- Autenticação ---
+# CORREÇÃO DEFINITIVA: Configura a API Key como uma variável de ambiente.
+# A biblioteca do Google irá encontrá-la automaticamente.
+if settings.GEMINI_API_KEY:
+    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
+else:
+    raise ValueError("GEMINI_API_KEY não encontrada em settings.py. O agente não pode se autenticar.")
 
-# --- Envolver a função de coleta NewsAPI com FunctionTool ---
+
+# --- Definições do Agente ---
+MODELO_LLM_AGENTE = "gemini-1.5-flash-001"
 collect_newsapi_tool_adk_instance = FunctionTool(func=tool_collect_newsapi_articles)
 
-# --- Definição do Agente ---
+# CORREÇÃO: O construtor do Agent volta a ser limpo, sem o parâmetro api_key.
 AgenteColetorNewsAPI_ADK = Agent(
-logger.info(f'Modelo LLM para o agente {Path(__file__).name} (AgenteColetorNewsAPI_ADK (Nome não extraído)): {MODELO_LLM_AGENTE}')
-logger.info(f'Definição do Agente AgenteColetorNewsAPI_ADK (Nome não extraído) carregada com sucesso em {Path(__file__).name}.')
-logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-    logger.info(f'Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}')
-    logger.info(f'Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.')
-logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
-logger.info(f"Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.")
-logger.info(f"Modelo LLM para o agente {Path(__file__).name}: {MODELO_LLM_AGENTE}")
-logger.info(f"Definição do Agente {AgenteColetorNewsAPI_ADK.name} carregada com sucesso em {Path(__file__).name}.")
     name="agente_coletor_newsapi_adk_v1",
     model=MODELO_LLM_AGENTE,
-    description=(
-        "Agente responsável por coletar artigos de notícias da NewsAPI com base em queries específicas."
-    ),
+    description="Agente responsável por coletar artigos de notícias da NewsAPI com base nas configurações em newsapi_news_config.json.",
     instruction=agente_prompt.PROMPT,
     tools=[
-        collect_newsapi_tool_adk_instance, # A ferramenta que faz a coleta
+        collect_newsapi_tool_adk_instance,
     ],
 )
 
+settings.logger.info(f"Agente '{AgenteColetorNewsAPI_ADK.name}' carregado com o modelo '{MODELO_LLM_AGENTE}'.")
+
+# --- Bloco de Teste Standalone (Correto) ---
 if __name__ == '__main__':
-    # Este bloco é para um teste muito básico da definição do agente e uma simulação
-    # de como o agente usaria sua ferramenta, sem usar o ADK Runner.
-    
-    settings.logger.info(f"--- Teste Standalone da Definição e Fluxo Simulado do Agente: {AgenteColetorNewsAPI_ADK.name} ---")
-    settings.logger.info(f"  Modelo Configurado: {AgenteColetorNewsAPI_ADK.model}")
+    settings.logger.info(f"--- Executando teste standalone para: {AgenteColetorNewsAPI_ADK.name} ---")
 
-    # --- DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---
-    settings.logger.info("\n--- DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---")
-    tool_names_for_log = [] 
-    if hasattr(AgenteColetorNewsAPI_ADK, 'tools') and AgenteColetorNewsAPI_ADK.tools is not None:
-        settings.logger.info(f"Tipo de AgenteColetorNewsAPI_ADK.tools: {type(AgenteColetorNewsAPI_ADK.tools)}")
-        if isinstance(AgenteColetorNewsAPI_ADK.tools, list):
-            settings.logger.info(f"Número de ferramentas: {len(AgenteColetorNewsAPI_ADK.tools)}")
-            for idx, tool_item in enumerate(AgenteColetorNewsAPI_ADK.tools):
-                settings.logger.info(f"  Ferramenta {idx}: {tool_item}")
-                settings.logger.info(f"    Tipo da Ferramenta {idx}: {type(tool_item)}")
-                settings.logger.info(f"    Possui atributo 'name'? {'Sim' if hasattr(tool_item, 'name') else 'NÃO'}")
-                
-                tool_name = f"UNKNOWN_TOOL_{idx}" 
-                if hasattr(tool_item, 'name'):
-                    tool_name = tool_item.name
-                    settings.logger.info(f"      tool_item.name: {tool_name}")
-                elif hasattr(tool_item, 'func') and hasattr(tool_item.func, '__name__'): 
-                    tool_name = tool_item.func.__name__
-                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
-                elif hasattr(tool_item, '__name__'): 
-                    tool_name = tool_item.__name__
-                    settings.logger.info(f"      tool_item.__name__: {tool_item.__name__}")
-                
-                tool_names_for_log.append(tool_name)
+    async def run_standalone_test():
+        app_name = "test_app_newsapi"
+        user_id = "test_user"
+        session_id = "test_session_newsapi"
+        
+        session_service = InMemorySessionService()
+        runner = Runner(agent=AgenteColetorNewsAPI_ADK, app_name=app_name, session_service=session_service)
+        await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+        
+        prompt_text = "Inicie a coleta de notícias da NewsAPI."
+        settings.logger.info(f"Enviando prompt de teste: '{prompt_text}'")
+        message = types.Content(role='user', parts=[types.Part(text=prompt_text)])
+        
+        final_agent_response = ""
+        async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
+            if event.is_final_response():
+                final_agent_response = event.content.parts[0].text
 
-                if hasattr(tool_item, 'func'): 
-                    settings.logger.info(f"      tool_item.func: {tool_item.func}")
-                    settings.logger.info(f"      tool_item.func.__name__: {tool_item.func.__name__}")
-        else:
-            settings.logger.info("AgenteColetorNewsAPI_ADK.tools NÃO é uma lista.")
-    else:
-        settings.logger.info("AgenteColetorNewsAPI_ADK NÃO possui atributo 'tools' ou é None.")
-    settings.logger.info("--- FIM DEBUG: INSPECIONANDO AgenteColetorNewsAPI_ADK.tools ---\n")
+        print("\n--- Resumo do Teste ---")
+        print(f"✅ SUCESSO: O pipeline de teste foi executado sem erros de programação.")
+        print(f"📄 Resposta Final do Agente: {final_agent_response}")
 
-    settings.logger.info(f"  Ferramentas Disponíveis (coletado): {tool_names_for_log}")
 
-    settings.logger.info("\n--- SIMULANDO EXECUÇÃO DO AGENTE (CHAMADAS DIRETAS À FERRAMENTA DE COLETA) ---")
-    
-    # Mock ToolContext (não é estritamente necessário para esta ferramenta, mas é bom ter para consistência)
-    class SimpleTestToolContext:
-        def __init__(self):
-            self.state = {} 
+    try:
+        asyncio.run(run_standalone_test())
+    except Exception as e:
+        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado durante a execução do teste: {e}", exc_info=True)
 
-    mock_ctx_collect = SimpleTestToolContext() 
-    
-    settings.logger.info(f"MockToolContext inicializado para simulação de teste. Estado inicial: {mock_ctx_collect.state}")
-
-    # --- Dados de Teste: Coleta NewsAPI ---
-    settings.logger.info("\nSimulando coleta de artigos da NewsAPI para 'PETR4':")
-    result_newsapi_collect = collect_newsapi_tool_adk_instance.func(
-        query="PETR4",
-        days_back=1,
-        page_size=3,
-        tool_context=mock_ctx_collect
-    )
-    settings.logger.info(f"Resultado da coleta NewsAPI: {json.dumps(result_newsapi_collect, indent=2, ensure_ascii=False)}")
-
-    settings.logger.info("\n--- Fim do Teste Standalone do Agente Coletor NewsAPI ---")
+    settings.logger.info(f"--- Fim do teste standalone ---")

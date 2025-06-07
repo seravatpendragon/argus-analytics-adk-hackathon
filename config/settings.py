@@ -85,8 +85,8 @@ logging.basicConfig(
     level=LOGGING_LEVEL,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(str(LOG_FILE), mode='w'), # Log para arquivo, sobrescreve a cada execução
-        logging.StreamHandler(sys.stdout) # Log para o console
+        logging.FileHandler(str(LOG_FILE), mode='w', encoding='utf-8'), # <--- ADICIONE AQUI
+        logging.StreamHandler(sys.stdout) # O StreamHandler geralmente lida bem, mas podemos adicionar por segurança se necessário.
     ]
 )
 

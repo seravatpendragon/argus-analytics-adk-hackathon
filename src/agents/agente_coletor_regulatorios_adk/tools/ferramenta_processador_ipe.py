@@ -1,183 +1,89 @@
-# src/agents/agente_coletor_regulatorios_adk/tools/ferramenta_processador_ipe.py
-
-import logging
 import pandas as pd
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
 import zipfile
-import io
-import os
-import numpy as np # Importar numpy para np.nan
-
-# --- Configuração de Caminhos para Imports do Projeto ---
+from io import TextIOWrapper
+from datetime import datetime, timezone
 from pathlib import Path
-import sys
-try:
-    CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    # Sobe 4 níveis (tools/ -> agente_coletor_regulatorios_adk/ -> agents/ -> src/ -> PROJECT_ROOT)
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-except Exception as e:
-    logging.error(f"Erro ao configurar PROJECT_ROOT em ferramenta_processador_ipe.py: {e}")
-    PROJECT_ROOT = Path(os.getcwd())
+from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-# Importa o logger de settings e db_utils
-try:
-    from config import settings
-    from src.database.db_utils import get_db_session, NewsArticle # Importa NewsArticle para usar no filtro de data
-    from sqlalchemy import func # Para usar func.max
-    _USING_MOCK_DB_FOR_DATE_CHECK = False
-except ImportError as e:
-    logging.error(f"Não foi possível importar settings ou db_utils para ferramenta_processador_ipe: {e}. O teste de data será mockado.")
-    _USING_MOCK_DB_FOR_DATE_CHECK = True
-    # Mocks para o teste de data se o DB real não estiver disponível
-    class MockNewsArticle:
-        publication_date = None # Mock para o atributo
-    class MockDBSession:
-        def query(self, *args): return self
-        def filter(self, *args): return self
-        def scalar(self): return None # Sempre retorna None para simular nenhuma data anterior
-        def close(self): pass
-    def get_db_session(): return MockDBSession()
+from config import settings
+from src.database.db_utils import get_db_session, get_or_create_news_source
+from src.database.create_db_tables import NewsArticle
+
+def tool_process_cvm_ipe_local(caminho_zip_local: str, Codigo_CVM_empresa: str) -> dict:
+    """
+    Processa um arquivo IPE ZIP local, filtra por uma empresa e salva novos documentos no banco.
+    """
+    settings.logger.info(f"Processando arquivo IPE '{caminho_zip_local}' para a empresa CVM: {Codigo_CVM_empresa}")
     
-logger = logging.getLogger(__name__)
-
-# Constantes para tipos de documento CVM relevantes
-TIPOS_DOC_CVM_RELEVANTES = [
-    "Fato Relevante",
-    "Comunicado ao Mercado",
-    "Aviso aos Acionistas",
-    "Relatório Proventos", # Geralmente contém informações importantes e textuais
-    "Comunicação sobre demandas societárias",
-    "Comunicação sobre Transação entre Partes Relacionadas",
-    "Informação Prestada às Bolsas Estrangeiras",
-    "Assembleia",
-    "Aviso aos Debenturistas",
-    "Calendário de Eventos Corporativos",
-    "Carta Anual de Governança Corporativa",
-    "Dados Econômico-Financeiros",
-    "Documentos de Oferta de Distribuição Pública",
-    "Escrituras e aditamentos de debêntures",
-    "Estatuto Social",
-    "Informação Prestada às Bolsas Estrangeiras",
-    "Reunião da Administração",
-    "Valores Mobiliários negociados e detidos (art. 11 da Instr. CVM nº 358)"
-]
-
-def get_latest_processed_date_for_cvm_file(session: Any, file_identifier: str, cd_cvm_empresa: str) -> Optional[datetime]:
-    """
-    Busca a data de publicação mais recente de um artigo CVM já processado e salvo no DB
-    para um dado arquivo ZIP e código CVM da empresa.
-    """
-    if _USING_MOCK_DB_FOR_DATE_CHECK:
-        return None 
-    return None
-
-
-def tool_process_cvm_ipe_local(caminho_zip_local: str, cd_cvm_empresa: str, tool_context: Any) -> Dict[str, Any]:
-    """
-    Processa um arquivo ZIP local de dados IPE da CVM, extrai metadados de documentos
-    relevantes para uma empresa específica e filtra apenas os novos documentos.
-
-    Args:
-        caminho_zip_local (str): Caminho completo para o arquivo ZIP local da CVM.
-        cd_cvm_empresa (str): Código CVM da empresa a ser filtrada (ex: "9512" para PETR4).
-        tool_context (Any): O contexto da ferramenta do ADK, usado para gerenciar o estado
-                            (ex: última data de processamento para evitar duplicatas).
-
-    Returns:
-        Dict[str, Any]: Um dicionário com 'status' ('success' ou 'error') e uma lista
-                        de metadados de novos documentos ('novos_documentos').
-    """
-    novos_documentos: List[Dict[str, Any]] = []
-    file_identifier = Path(caminho_zip_local).name 
-    state_key = f"ipe_last_processed_date_{file_identifier.replace('.', '_')}_{cd_cvm_empresa}"
-
-    last_processed_date_str = tool_context.state.get(state_key)
-    last_processed_date: Optional[datetime] = None
-    if last_processed_date_str:
-        try:
-            last_processed_date = datetime.fromisoformat(last_processed_date_str)
-            logger.info(f"Processando IPE local: '{caminho_zip_local}' para CD_CVM {cd_cvm_empresa}. Última data: {last_processed_date.isoformat()}")
-        except ValueError:
-            logger.warning(f"Data inválida no estado da sessão para {state_key}: {last_processed_date_str}. Ignorando data anterior.")
-    else:
-        logger.info(f"Processando IPE local: '{caminho_zip_local}' para CD_CVM {cd_cvm_empresa}. Última data: Nenhuma")
-
+    db_session: Session | None = None
     try:
-        with zipfile.ZipFile(caminho_zip_local, 'r') as z:
-            csv_file_name = None
-            for name in z.namelist():
-                if name.endswith('.csv') and file_identifier.replace('.zip', '') in name:
-                    csv_file_name = name
-                    break
-            
-            if not csv_file_name:
-                raise FileNotFoundError(f"Arquivo CSV não encontrado dentro do ZIP: {caminho_zip_local}")
-
-            with z.open(csv_file_name) as csv_file:
-                df = pd.read_csv(csv_file, sep=';', encoding='latin1', low_memory=False)
-
-        # Filtra pela empresa usando o nome da coluna correto
-        df_empresa = df[df['Codigo_CVM'] == int(cd_cvm_empresa)] 
-
-        # Filtra por tipos de documento relevantes usando a coluna 'Categoria'
-        df_relevantes = df_empresa[df_empresa['Categoria'].isin(TIPOS_DOC_CVM_RELEVANTES)].copy() 
-
-        # Converte a coluna de data para datetime e filtra documentos novos
-        df_relevantes['Data_Entrega'] = pd.to_datetime(df_relevantes['Data_Entrega'], format='%Y-%m-%d', errors='coerce') 
-        df_relevantes.dropna(subset=['Data_Entrega'], inplace=True)
-
-        # Ordena por data para garantir que a última data seja a mais recente
-        df_relevantes.sort_values(by='Data_Entrega', ascending=False, inplace=True) 
-
-        documentos_filtrados_para_retorno = []
-        most_recent_publication_date_in_this_run: Optional[datetime] = None
-
-        for index, row in df_relevantes.iterrows():
-            public_date = row['Data_Entrega'].to_pydatetime().replace(tzinfo=timezone.utc)
-            
-            if last_processed_date and public_date <= last_processed_date:
-                continue
-
-            if most_recent_publication_date_in_this_run is None or public_date > most_recent_publication_date_in_this_run:
-                most_recent_publication_date_in_this_run = public_date
-
-            # CORREÇÃO AQUI: Tratar np.nan para campos de texto
-            title_val = row['Assunto']
-            if isinstance(title_val, float) and np.isnan(title_val):
-                title_val = None
-            
-            document_type_val = row['Categoria']
-            if isinstance(document_type_val, float) and np.isnan(document_type_val):
-                document_type_val = None
-
-            doc_metadata = {
-                "title": title_val, # <-- Usar o valor tratado
-                "document_url": row['Link_Download'], 
-                "publication_date_iso": public_date.isoformat(),
-                "document_type": document_type_val, # <-- Usar o valor tratado
-                "protocol_id": row['Protocolo_Entrega'], 
-                "company_cvm_code": str(row['Codigo_CVM']), 
-                "company_name": row['Nome_Companhia'], 
-                "source_main_file": file_identifier,
-                "source_type": "CVM_IPE" 
-            }
-            documentos_filtrados_para_retorno.append(doc_metadata)
+        db_session = get_db_session()
+        nome_arquivo_csv = Path(caminho_zip_local).stem + '.csv'
         
-        logger.info(f"DEBUG_IPE: Documentos da empresa {cd_cvm_empresa} que correspondem aos categorias desejados: {len(df_relevantes)}")
-        logger.info(f"Processamento de '{caminho_zip_local}' concluído. {len(documentos_filtrados_para_retorno)} novos docs encontrados de {len(df_relevantes)} filtrados.")
+        all_docs_to_insert = []
+        
+        source_domain_cvm = "cvm.gov.br"
+        source_name_cvm = "Comissão de Valores Mobiliários (CVM)"
+        credibility_data_mock = {source_domain_cvm: {"source_name": source_name_cvm, "overall_credibility_score": 1}}
+        cvm_source_obj = get_or_create_news_source(db_session, source_domain_cvm, source_name_cvm, credibility_data_mock)
+        if not cvm_source_obj:
+            raise Exception("Não foi possível criar a fonte padrão 'CVM' no banco de dados.")
 
-        if most_recent_publication_date_in_this_run:
-            tool_context.state[state_key] = most_recent_publication_date_in_this_run.isoformat()
-            logger.info(f"Estado '{state_key}' ATUALIZADO para: {tool_context.state[state_key]}")
+        with zipfile.ZipFile(caminho_zip_local, 'r') as z:
+            with z.open(nome_arquivo_csv, 'r') as csv_file:
+                chunk_iterator = pd.read_csv(
+                    TextIOWrapper(csv_file, 'latin-1'), sep=';', encoding='latin-1',
+                    chunksize=10000, dtype={'Codigo_CVM': str}
+                )
+                
+                for chunk in chunk_iterator:
+                    
+                    chunk.columns = [str(col).strip() for col in chunk.columns]
+                    df_empresa = chunk[chunk['Codigo_CVM'] == Codigo_CVM_empresa]
 
-        return {"status": "success", "novos_documentos": documentos_filtrados_para_retorno}
+                    for row in df_empresa.itertuples():
+                        link_documento = getattr(row, 'Link_Download', None)
+                        if not link_documento or not isinstance(link_documento, str):
+                            continue
 
-    except FileNotFoundError as e:
-        logger.error(f"Arquivo não encontrado: {e}")
-        return {"status": "error", "message": f"Arquivo não encontrado: {e}", "novos_documentos": []}
+                        # LÓGICA DE TÍTULO INTELIGENTE (SUA SUGESTÃO)
+                        assunto = getattr(row, 'Assunto', '')
+                        if isinstance(assunto, str) and assunto.strip():
+                            headline_text = assunto.strip()
+                        else:
+                            # Fallback para Categoria + Protocolo
+                            categoria = getattr(row, 'Categoria', 'Documento')
+                            protocolo = getattr(row, 'Protocolo_Entrega', 'Sem Protocolo')
+                            headline_text = f"{categoria} - Protocolo {protocolo}"
+                            settings.logger.warning(f"Documento CVM sem 'Assunto'. Usando fallback: '{headline_text}'. Link: {link_documento}")
+
+                        doc_dict = {
+                            "headline": headline_text,
+                            "article_link": link_documento,
+                            "publication_date": datetime.strptime(str(row.Data_Entrega), '%Y-%m-%d'),
+                            "news_source_id": cvm_source_obj.news_source_id,
+                            "summary": f"Documento Regulatório: {getattr(row, 'Categoria', '')}",
+                            "article_type": "Regulatório CVM",
+                            "processing_status": 'processed', 
+                            "source_feed_name": "CVM - Regulatórios",
+                            "collection_date": datetime.now(tz=timezone.utc)
+                        }
+                        all_docs_to_insert.append(doc_dict)
+        
+        if not all_docs_to_insert:
+            return {"status": "success", "message": "Nenhum documento novo para a empresa encontrada."}
+
+        stmt = pg_insert(NewsArticle).values(all_docs_to_insert)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['article_link'])
+        result = db_session.execute(stmt)
+        db_session.commit()
+        
+        return {"status": "success", "message": f"{result.rowcount} novos documentos regulatórios inseridos."}
+
     except Exception as e:
-        logger.error(f"Erro ao processar arquivo IPE da CVM '{caminho_zip_local}': {e}", exc_info=True)
-        return {"status": "error", "message": str(e), "novos_documentos": []}
+        if db_session: db_session.rollback()
+        settings.logger.error(f"Erro ao processar arquivo IPE: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+    finally:
+        if db_session: db_session.close()

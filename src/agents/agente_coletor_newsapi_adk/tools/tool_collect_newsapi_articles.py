@@ -1,116 +1,90 @@
 # src/agents/agente_coletor_newsapi_adk/tools/tool_collect_newsapi_articles.py
 
-import logging
-import os
-from datetime import datetime, timedelta, timezone 
-from typing import Dict, Any, List, Optional
 import json
-
-# --- Configuração de Caminhos para Imports do Projeto ---
 from pathlib import Path
-import sys
-try:
-    CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
-except Exception as e:
-    logging.error(f"Erro ao configurar PROJECT_ROOT em tool_collect_newsapi_articles.py: {e}")
-    PROJECT_ROOT = Path(os.getcwd())
+import time
+from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from config import settings
+# CORREÇÃO: Importar as funções de busca de ID e os modelos de tabela de link
+from src.database.db_utils import get_db_session, get_company_id_for_ticker, get_segment_id_by_name
+from src.database.create_db_tables import NewsArticle, NewsArticleCompanyLink, NewsArticleSegmentLink
+from src.data_collection.news_data.newsapi_collector import NewsAPICollector
 
-# Importa o coletor NewsAPI real
-try:
-    from src.data_collection.news_data.newsapi_collector import NewsAPICollector
-    from config import newsapi_news_config as newsapi_config
-    _USING_MOCK_COLLECTOR = False
-except ImportError as e:
-    logging.error(f"Não foi possível importar NewsAPICollector ou newsapi_news_config: {e}. O teste usará mocks.")
-    _USING_MOCK_COLLECTOR = True
-
-logger = logging.getLogger(__name__)
-
-# --- MOCK NewsAPICollector para testes standalone sem chave API ---
-if _USING_MOCK_COLLECTOR:
-    class MockNewsAPICollector:
-        def __init__(self, api_key: str, base_url: str):
-            self.api_key = api_key
-            self.base_url = base_url
-            logger.warning("Usando MockNewsAPICollector. Nenhuma chamada real à API será feita.")
-
-        def get_articles(self, query: str, from_param: str, to_param: str, language: str, sort_by: str, page_size: int) -> List[Dict[str, Any]]:
-            logger.info(f"MOCK NewsAPI: Simulando coleta para query='{query}' de {from_param} a {to_param}")
-            mock_articles = [
-                {
-                    "source": {"id": "mock-source-1", "name": "Mock News Source"},
-                    "author": "Mock Author",
-                    "title": f"Mock NewsAPI Article 1 for {query}", # Removido timestamp
-                    "description": "This is a mock description for the first article.",
-                    "url": f"http://mock.com/newsapi/article1_{query}", # Removido timestamp
-                    "urlToImage": "http://mock.com/image1.jpg",
-                    "publishedAt": datetime.now(timezone.utc).isoformat(), # Mantém data atual para o campo publishedAt
-                    "content": "Mock content for article 1."
-                },
-                {
-                    "source": {"id": "mock-source-2", "name": "Another Mock Source"},
-                    "author": "Another Mock Author",
-                    "title": f"Mock NewsAPI Article 2 for {query}", # Removido timestamp
-                    "description": "This is a mock description for the second article.",
-                    "url": f"http://mock.com/newsapi/article2_{query}", # Removido timestamp
-                    "urlToImage": "http://mock.com/image2.jpg",
-                    "publishedAt": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
-                    "content": "Mock content for article 2."
-                }
-            ]
-            for article in mock_articles:
-                article["source_type"] = "NewsAPI"
-            return mock_articles
-    
-    NewsAPICollector = MockNewsAPICollector
-    newsapi_config = {
-        "NEWSAPI_API_KEY": "MOCK_API_KEY",
-        "NEWSAPI_BASE_URL": "http://mock.newsapi.org/v2/everything",
-        "DEFAULT_QUERY_PARAMS": {
-            "language": "pt",
-            "sortBy": "publishedAt",
-            "pageSize": 5
-        }
-    }
-
-
-def tool_collect_newsapi_articles(
-    query: str,
-    days_back: int = 1,
-    page_size: int = 10,
-    tool_context: Any = None
-) -> Dict[str, Any]:
+def load_json_file(file_path: Path) -> dict | None:
+    """Carrega um arquivo JSON de forma segura."""
+    if not file_path.exists():
+        settings.logger.error(f"Arquivo de configuração não encontrado: {file_path}")
+        return None
     try:
-        api_key = newsapi_config.get("NEWSAPI_API_KEY")
-        base_url = newsapi_config.get("NEWSAPI_BASE_URL")
-        default_params = newsapi_config.get("DEFAULT_QUERY_PARAMS", {})
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        settings.logger.error(f"Erro ao ler {file_path}: {e}", exc_info=True)
+        return None
 
-        if not api_key or not base_url:
-            raise ValueError("Chave API ou URL base da NewsAPI não configurada.")
-
-        collector = NewsAPICollector(api_key=api_key, base_url=base_url)
-
-        to_date = datetime.now(timezone.utc)
-        from_date = to_date - timedelta(days=days_back)
-
-        articles = collector.get_articles(
-            query=query,
-            from_param=from_date.isoformat(),
-            to_param=to_date.isoformat(),
-            language=default_params.get("language", "pt"),
-            sort_by=default_params.get("sortBy", "publishedAt"),
-            page_size=page_size
-        )
+def tool_collect_newsapi_articles(tool_context=None) -> dict:
+    """ Coleta artigos da NewsAPI e os vincula a empresas/segmentos conforme a configuração. """
+    settings.logger.info("Ferramenta 'tool_collect_newsapi_articles' iniciada...")
+    db_session: Session | None = None
+    try:
+        db_session = get_db_session()
         
-        for article in articles:
-            article["source_type"] = "NewsAPI"
+        config_dir = Path(settings.BASE_DIR) / "config"
+        newsapi_config_main = load_json_file(config_dir / "newsapi_news_config.json")
+        if not newsapi_config_main: raise ValueError("Configuração da NewsAPI não encontrada.")
+        
+        newsapi_config = newsapi_config_main["newsapi"]
+        queries_from_config = newsapi_config.get("queries", [])
+        credibility_data = load_json_file(config_dir / "news_source_domain.json") or {}
 
-        logger.info(f"Coleta NewsAPI: Encontrados {len(articles)} artigos para a query '{query}'.")
-        return {"status": "success", "articles_data": articles}
+        collector = NewsAPICollector(db_session=db_session, credibility_data=credibility_data)
+        
+        all_prepared_data = []
+        for query_config in queries_from_config:
+            prepared_tuples = collector.run_single_query_and_prepare_data(query_config, newsapi_config.get("base_url"))
+            if prepared_tuples:
+                all_prepared_data.extend(prepared_tuples)
+
+        if not all_prepared_data:
+            return {"status": "success", "message": "Nenhum artigo novo para processar."}
+
+        # --- ETAPA A: Inserir todos os artigos ---
+        all_article_dicts = [data[0] for data in all_prepared_data]
+        stmt = pg_insert(NewsArticle).values(all_article_dicts).on_conflict_do_nothing(index_elements=['article_link'])
+        result = db_session.execute(stmt)
+        settings.logger.info(f"{result.rowcount} novos artigos inseridos na tabela NewsArticles.")
+        
+        # --- ETAPA B: Criar os Vínculos ---
+        links_created = 0
+        for article_dict, target_ticker, target_segment in all_prepared_data:
+            # Pega o ID do artigo que acabamos de inserir (ou que já existia)
+            article_id = db_session.query(NewsArticle.news_article_id).filter(NewsArticle.article_link == article_dict['article_link']).scalar()
+            if not article_id: continue
+
+            # Vincula com a empresa, se houver um ticker alvo
+            if target_ticker:
+                company_id = get_company_id_for_ticker(db_session, target_ticker)
+                if company_id:
+                    link_stmt = pg_insert(NewsArticleCompanyLink).values(news_article_id=article_id, company_id=company_id).on_conflict_do_nothing()
+                    db_session.execute(link_stmt)
+                    links_created += 1
+
+            # Vincula com o segmento, se houver
+            if target_segment:
+                segment_id = get_segment_id_by_name(db_session, target_segment)
+                if segment_id:
+                    link_stmt = pg_insert(NewsArticleSegmentLink).values(news_article_id=article_id, segment_id=segment_id).on_conflict_do_nothing()
+                    db_session.execute(link_stmt)
+        
+        db_session.commit()
+        settings.logger.info(f"Commit finalizado. {links_created} vínculos criados/confirmados.")
+
+        return { "status": "success", "message": f"Coleta concluída. {result.rowcount} novos artigos inseridos e {links_created} vínculos processados." }
 
     except Exception as e:
-        logger.error(f"Erro ao coletar artigos da NewsAPI para query '{query}': {e}", exc_info=True)
-        return {"status": "error", "message": str(e), "articles_data": []}
+        if db_session: db_session.rollback()
+        settings.logger.error(f"Erro na ferramenta tool_collect_newsapi_articles: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+    finally:
+        if db_session: db_session.close()
