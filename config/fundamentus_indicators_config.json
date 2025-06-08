@@ -17,14 +17,14 @@
     "Dívida bruta/Patrim",
     "Dívida líquida/EBITDA"
   ],
-  "balance_sheet": [
+  "balance_sheet_main": [
     "Ativo",
     "Ativo Circulante",
     "Dívida Bruta",
     "Dívida Líquida",
     "Patrimônio Líquido"
   ],
-  "income_statement": [
+  "income_statement_main": [
     "Receita Líquida",
     "EBIT",
     "Lucro Líquido"
