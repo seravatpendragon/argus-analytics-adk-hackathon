@@ -3,20 +3,30 @@
     "P/L",
     "P/VP",
     "EV/EBITDA",
-    "Div.Yield"
+    "Dividend Yield" 
   ],
   "efficiency_indicators": [
     "ROE",
     "ROIC",
-    "Marg.Liq",
-    "Giro Ativos"
+    "Margem líquida",
+    "Margem bruta",
+    "Margem EBIT"
   ],
   "risk_solidity_indicators": [
-    "Liq.Corr.",
-    "Div.Brut/Pat.",
-    "Div.Liq/EBITDA"
+    "Liquidez corrente",
+    "Dívida bruta/Patrim",
+    "Dívida líquida/EBITDA"
   ],
-  "growth_indicators": [
-    "Cresc. Rec.5a"
+  "balance_sheet": [
+    "Ativo",
+    "Ativo Circulante",
+    "Dívida Bruta",
+    "Dívida Líquida",
+    "Patrimônio Líquido"
+  ],
+  "income_statement": [
+    "Receita Líquida",
+    "EBIT",
+    "Lucro Líquido"
   ]
 }

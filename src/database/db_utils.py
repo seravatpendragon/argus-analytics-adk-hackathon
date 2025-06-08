@@ -509,21 +509,41 @@ def get_assets_by_source(source_name: str) -> List[Dict[str, any]]:
     finally:
         session.close()
 
-def get_all_tickers() -> List[str]:
+def get_all_tickers(session: Session) -> List[str]:
     """
-    Busca e retorna uma lista de todos os tickers únicos da tabela Companies.
+    Busca e retorna uma lista de todos os tickers únicos da tabela Companies,
+    usando a sessão fornecida.
     """
-    settings.logger.info("Buscando todos os tickers da tabela Companies.")
-    session = get_db_session()
+    logger.info("Buscando todos os tickers da tabela Companies.")
     try:
-        # Seleciona apenas a coluna 'ticker'
+        # Seleciona apenas a coluna 'ticker' da tabela Company
         stmt = select(Company.ticker)
         results = session.execute(stmt).scalars().all()
-
-        settings.logger.info(f"Encontrados {len(results)} tickers no total.")
+        
+        logger.info(f"Encontrados {len(results)} tickers no total.")
         return results
     except Exception as e:
-        settings.logger.error(f"Erro ao buscar todos os tickers: {e}", exc_info=True)
+        logger.error(f"Erro ao buscar todos os tickers: {e}", exc_info=True)
         return []
-    finally:
-        session.close()
+
+def get_or_create_data_source(session: Session, source_name: str) -> int:
+    """
+    Busca ou cria uma fonte de dados pelo nome e retorna seu ID,
+    sem commitar a transação.
+    """
+    if not source_name:
+        logger.error("get_or_create_data_source chamado com nome de fonte vazio.")
+        return None
+
+    source = session.query(EconomicDataSource).filter_by(name=source_name).first()
+    
+    if source:
+        logger.debug(f"Fonte de dados encontrada: '{source_name}' (ID: {source.econ_data_source_id})")
+        return source.econ_data_source_id
+    else:
+        logger.info(f"Fonte de dados '{source_name}' não encontrada. Criando nova.")
+        new_source = EconomicDataSource(name=source_name)
+        session.add(new_source)
+        session.flush()  # Usa flush para obter o ID do novo objeto sem commitar a transação inteira
+        logger.info(f"Nova fonte de dados preparada para inserção: '{source_name}' (ID: {new_source.econ_data_source_id})")
+        return new_source.econ_data_source_id
