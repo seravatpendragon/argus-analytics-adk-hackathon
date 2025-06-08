@@ -443,27 +443,24 @@ def get_or_create_indicator(session: Session, name: str, source_name: str, **kwa
 
 def batch_upsert_indicator_values(session: Session, data_to_insert_list: list[dict]):
     """
-    Prepara um upsert em lote para EconomicIndicatorValue.
-    NÃO faz commit. A responsabilidade do commit é de quem chama a função.
+    Realiza UPSERT em lote para EconomicIndicatorValue.
+    Se o registro já existe (mesmo indicador, data, empresa), ele atualiza os valores.
     """
     if not data_to_insert_list:
         logger.info("batch_upsert_indicator_values: Nenhuma lista para inserir.")
         return 0
 
     table = EconomicIndicatorValue.__table__
-    
-    # A normalização não é mais necessária aqui se a ferramenta já monta os dados corretamente
-    # normalize_indicator_values(data_to_insert_list, sentinel=1) 
-
-    # IMPORTANTE: Vamos usar ON CONFLICT DO UPDATE, que é mais robusto
     insert_stmt = pg_insert(table).values(data_to_insert_list)
+
+    # Lógica de UPSERT: Se o registro já existe, ATUALIZE os valores.
     upsert_stmt = insert_stmt.on_conflict_do_update(
         index_elements=['indicator_id', 'effective_date', 'company_id', 'segment_id'],
-        set_=dict(
-            value_numeric=insert_stmt.excluded.value_numeric,
-            value_text=insert_stmt.excluded.value_text,
-            collection_timestamp=datetime.now(timezone.utc)
-        )
+        set_={
+            'value_numeric': insert_stmt.excluded.value_numeric,
+            'value_text': insert_stmt.excluded.value_text,
+            'collection_timestamp': datetime.now(timezone.utc)
+        }
     )
     
     result = session.execute(upsert_stmt)
