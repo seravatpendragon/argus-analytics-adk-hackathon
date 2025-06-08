@@ -139,22 +139,11 @@ def get_or_create_indicator_id(session: Session, indicator_name: str, indicator_
                 settings.logger.error(f"Erro ao ATUALIZAR indicador '{search_name}': {e}")
         return indicator.indicator_id
     else:
-        settings.logger.info(f"Não encontrado. Criando novo: Nome='{search_name}', Tipo='{search_type}', Freq='{frequency}', Unidade='{unit}'")
         new_indicator = EconomicIndicator(name=search_name, indicator_type=search_type, frequency=frequency, unit=unit, econ_data_source_id=econ_data_source_id)
         session.add(new_indicator)
-        try:
-            session.commit()
-            settings.logger.info(f"Novo indicador criado ID: {new_indicator.indicator_id} para Nome='{search_name}'")
-            return new_indicator.indicator_id
-        except Exception as e:
-            session.rollback()
-            settings.logger.error(f"Erro ao CRIAR indicador '{search_name}': {e}. Tentando buscar...")
-            indicator = session.query(EconomicIndicator).filter_by(name=search_name, indicator_type=search_type).first()
-            if indicator:
-                settings.logger.info(f"Encontrado ID {indicator.indicator_id} para '{search_name}' pós-rollback.")
-                return indicator.indicator_id
-            settings.logger.critical(f"FALHA CRÍTICA ao criar/obter '{search_name}'.")
-            return None
+        session.flush() # Usa flush para atribuir o ID sem commitar a transação
+        logger.info(f"Novo indicador preparado para inserção: ID {new_indicator.indicator_id} para Nome='{search_name}'")
+        return new_indicator.indicator_id
 
 def get_or_create_news_source(session: Session,
                               source_domain: str,
@@ -452,24 +441,89 @@ def get_or_create_indicator(session: Session, name: str, source_name: str, **kwa
     return new_indicator
 
 
-def batch_upsert_indicator_values(session: Session, data_list: list[dict]) -> int:
+def batch_upsert_indicator_values(session: Session, data_to_insert_list: list[dict]):
     """
-    Realiza um 'upsert' em lote para a tabela EconomicIndicatorValues.
-    Insere novos valores e ignora conflitos com base na constraint de unicidade da tabela.
+    Prepara um upsert em lote para EconomicIndicatorValue.
+    NÃO faz commit. A responsabilidade do commit é de quem chama a função.
     """
-    if not data_list:
+    if not data_to_insert_list:
+        logger.info("batch_upsert_indicator_values: Nenhuma lista para inserir.")
         return 0
 
     table = EconomicIndicatorValue.__table__
-    stmt = pg_insert(table).values(data_list)
     
-    # CORREÇÃO DEFINITIVA: Em vez de listar as colunas,
-    # apontamos diretamente para o NOME da nossa UniqueConstraint.
-    # Este nome ("uq_economicindicatorvalue_indicator_date_company_segment")
-    # foi definido no seu arquivo create_db_tables.py.
-    stmt = stmt.on_conflict_do_nothing(
-        constraint="uq_economicindicatorvalue_indicator_date_company_segment"
+    # A normalização não é mais necessária aqui se a ferramenta já monta os dados corretamente
+    # normalize_indicator_values(data_to_insert_list, sentinel=1) 
+
+    # IMPORTANTE: Vamos usar ON CONFLICT DO UPDATE, que é mais robusto
+    insert_stmt = pg_insert(table).values(data_to_insert_list)
+    upsert_stmt = insert_stmt.on_conflict_do_update(
+        index_elements=['indicator_id', 'effective_date', 'company_id', 'segment_id'],
+        set_=dict(
+            value_numeric=insert_stmt.excluded.value_numeric,
+            value_text=insert_stmt.excluded.value_text,
+            collection_timestamp=datetime.now(timezone.utc)
+        )
     )
     
-    result = session.execute(stmt)
+    result = session.execute(upsert_stmt)
+    logger.info(f"{result.rowcount} registros de valores de indicadores foram inseridos/atualizados na sessão.")
     return result.rowcount
+
+
+def get_assets_by_source(source_name: str) -> List[Dict[str, any]]:
+    """
+    Busca no banco de dados todos os ativos (empresas) associados a uma fonte de dados específica.
+
+    Args:
+        source_name: O nome da fonte (ex: 'YFinance', 'Fundamentus').
+
+    Returns:
+        Uma lista de dicionários, cada um representando um ativo.
+    """
+    settings.logger.info(f"Buscando ativos para a fonte: '{source_name}'")
+    session = get_db_session()
+    try:
+        # Assumindo que a tabela 'Company' tem uma coluna 'source'
+        # e que queremos o ticker e o company_id.
+        stmt = select(
+            Company.company_id,
+            Company.ticker,
+            Company.company_name,
+            Company.source
+        ).where(Company.source == source_name)
+        
+        results = session.execute(stmt).mappings().all()
+        
+        assets_list = [dict(row) for row in results]
+        
+        if not assets_list:
+            settings.logger.warning(f"Nenhum ativo encontrado para a fonte '{source_name}' no banco de dados.")
+        else:
+            settings.logger.info(f"{len(assets_list)} ativos encontrados para a fonte '{source_name}'.")
+            
+        return assets_list
+    except Exception as e:
+        settings.logger.error(f"Erro ao buscar ativos por fonte '{source_name}': {e}", exc_info=True)
+        return []
+    finally:
+        session.close()
+
+def get_all_tickers() -> List[str]:
+    """
+    Busca e retorna uma lista de todos os tickers únicos da tabela Companies.
+    """
+    settings.logger.info("Buscando todos os tickers da tabela Companies.")
+    session = get_db_session()
+    try:
+        # Seleciona apenas a coluna 'ticker'
+        stmt = select(Company.ticker)
+        results = session.execute(stmt).scalars().all()
+
+        settings.logger.info(f"Encontrados {len(results)} tickers no total.")
+        return results
+    except Exception as e:
+        settings.logger.error(f"Erro ao buscar todos os tickers: {e}", exc_info=True)
+        return []
+    finally:
+        session.close()

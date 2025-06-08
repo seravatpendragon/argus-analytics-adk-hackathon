@@ -9,7 +9,7 @@ import asyncio
 # --- Configuração de Caminhos e Imports ---
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
+    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
@@ -30,7 +30,7 @@ except ImportError as e:
     import logging
     logging.basicConfig(level=logging.INFO)
     _logger = logging.getLogger(__name__)
-    _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorNewsAPI_ADK: {e}")
+    _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorYfinance_ADK: {e}")
     sys.exit(1)
 
 # --- Autenticação ---

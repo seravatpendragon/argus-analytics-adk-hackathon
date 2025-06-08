@@ -1,0 +1,22 @@
+{
+  "valuation_indicators": [
+    "P/L",
+    "P/VP",
+    "EV/EBITDA",
+    "Div.Yield"
+  ],
+  "efficiency_indicators": [
+    "ROE",
+    "ROIC",
+    "Marg.Liq",
+    "Giro Ativos"
+  ],
+  "risk_solidity_indicators": [
+    "Liq.Corr.",
+    "Div.Brut/Pat.",
+    "Div.Liq/EBITDA"
+  ],
+  "growth_indicators": [
+    "Cresc. Rec.5a"
+  ]
+}
