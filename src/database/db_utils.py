@@ -16,7 +16,7 @@ from typing import List, Dict, Optional # Para type hints (opcional, mas boa pr�
 
 # Importe seu logger de settings e o modelo EconomicIndicatorValue
 from config import settings
-from .create_db_tables import EconomicIndicatorValue
+from .create_db_tables import EconomicDataSource, EconomicIndicatorValue
 from sqlalchemy.exc import IntegrityError
 
 # Adiciona o diretório raiz do projeto ao sys.path
@@ -423,30 +423,53 @@ def batch_upsert_company_maslow_profile(session: Session, data_to_upsert_list: l
             raise
     settings.logger.info(f"{len(processed_data_list)} perfis Maslow de empresa processados (UPSERT).")
 
-def get_company_by_cvm_code(session, cvm_code: str, company_name: Optional[str] = None) -> Optional[int]:
+def get_or_create_indicator(session: Session, name: str, source_name: str, **kwargs) -> EconomicIndicator:
     """
-    Busca uma Company pelo código CVM. Se não encontrar, a cria.
-    Retorna o company_id.
+    Busca um indicador pelo nome. Se não existir, cria o indicador e sua fonte de dados.
+    Usa 'name' como o parâmetro para o nome do indicador.
     """
-    company = session.query(Company).filter_by(cvm_code=cvm_code).first()
-    if not company:
-        if company_name:
-            try:
-                company = Company(cvm_code=cvm_code, company_name=company_name)
-                session.add(company)
-                session.flush() # Atribui o ID ao objeto company
-                logger.info(f"Company '{company_name}' (CVM: {cvm_code}) criada com ID: {company.company_id}")
-            except IntegrityError:
-                session.rollback() # Rollback se outra transação criou a mesma empresa em paralelo
-                company = session.query(Company).filter_by(cvm_code=cvm_code).first() # Tenta buscar novamente
-                if not company: # Se ainda não encontrar, algo está errado
-                    logger.error(f"Erro de concorrência: Empresa com CVM code {cvm_code} não pôde ser criada nem encontrada após rollback.")
-                    return None
-            except Exception as e:
-                logger.error(f"Erro ao criar Company para CVM code {cvm_code}: {e}")
-                session.rollback()
-                return None
-        else:
-            logger.warning(f"Company com CVM code {cvm_code} não encontrada e 'company_name' não fornecido para criação.")
-            return None
-    return company.company_id
+    indicator = session.query(EconomicIndicator).filter(EconomicIndicator.name == name).first()
+    if indicator:
+        return indicator
+
+    settings.logger.info(f"Indicador '{name}' não encontrado, criando novo...")
+    
+    data_source = session.query(EconomicDataSource).filter(EconomicDataSource.name == source_name).first()
+    if not data_source:
+        data_source = EconomicDataSource(name=source_name)
+        session.add(data_source)
+        session.flush()
+
+    new_indicator = EconomicIndicator(
+        name=name,
+        econ_data_source_id=data_source.econ_data_source_id,
+        indicator_type=kwargs.get('indicator_type'),
+        frequency=kwargs.get('frequency'),
+        unit=kwargs.get('unit')
+    )
+    session.add(new_indicator)
+    session.commit()
+    return new_indicator
+
+
+def batch_upsert_indicator_values(session: Session, data_list: list[dict]) -> int:
+    """
+    Realiza um 'upsert' em lote para a tabela EconomicIndicatorValues.
+    Insere novos valores e ignora conflitos com base na constraint de unicidade da tabela.
+    """
+    if not data_list:
+        return 0
+
+    table = EconomicIndicatorValue.__table__
+    stmt = pg_insert(table).values(data_list)
+    
+    # CORREÇÃO DEFINITIVA: Em vez de listar as colunas,
+    # apontamos diretamente para o NOME da nossa UniqueConstraint.
+    # Este nome ("uq_economicindicatorvalue_indicator_date_company_segment")
+    # foi definido no seu arquivo create_db_tables.py.
+    stmt = stmt.on_conflict_do_nothing(
+        constraint="uq_economicindicatorvalue_indicator_date_company_segment"
+    )
+    
+    result = session.execute(stmt)
+    return result.rowcount
