@@ -67,9 +67,9 @@ if __name__ == '__main__':
         # --- Fim da Correção ---
         
         print("\n--- Resumo do Teste ---")
-        print(f"📄 Resposta Final do Agente: {final_agent_response}")
+        print(f"Resposta Final do Agente: {final_agent_response}")
 
     try:
         asyncio.run(run_standalone_test())
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado durante a execução do teste: {e}", exc_info=True)
+        settings.logger.critical(f"FALHA: Ocorreu um erro inesperado durante a execução do teste: {e}", exc_info=True)

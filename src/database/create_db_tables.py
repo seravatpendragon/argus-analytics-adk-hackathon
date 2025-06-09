@@ -94,6 +94,7 @@ class NewsArticle(Base):
     # NOVAS COLUNAS ADICIONADAS:
     summary = Column(Text, nullable=True)
     processing_status = Column(String(50), nullable=True, default='pending_full_text_fetch')
+    last_processed_at = Column(DateTime(timezone=True), nullable=True)
     source_feed_name = Column(String(255), nullable=True)
     source_feed_url = Column(Text, nullable=True)
     news_source = relationship("NewsSource", back_populates="articles")

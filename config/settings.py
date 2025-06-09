@@ -7,10 +7,13 @@ Carrega variáveis de ambiente, define caminhos e parâmetros de logging.
 
 from datetime import datetime
 import os
+import random
 import sys # Necessário para sys.exit
 from dotenv import load_dotenv
 import logging
-from pathlib import Path # Usar pathlib para manipulação de caminhos mais robusta
+from pathlib import Path 
+from newspaper import Config as NewspaperConfig
+
 
 # --- Carrega as variáveis do arquivo .env para o ambiente ---
 # O arquivo .env deve estar na raiz do projeto.
@@ -192,3 +195,41 @@ AGENT_CONFIGS = {
         }
     }
 }
+
+USER_AGENTS = [
+     # Windows - Chrome (Latest)
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    
+    # macOS - Safari (Latest)
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    
+    # Linux - Firefox (Latest)
+    'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0',
+    
+    # Android - Chrome (Mobile)
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+    
+    # iOS - Safari (Mobile)
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    
+    # Windows - Edge
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
+    
+    # macOS - Chrome
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    
+    # Windows - Firefox
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0'
+]
+
+# Substitua a função get_newspaper3k_config pela versão abaixo
+def get_newspaper3k_config():
+    config = NewspaperConfig()
+    # A CADA CHAMADA, UM NOVO USER-AGENT É ESCOLHIDO ALEATORIAMENTE
+    config.browser_user_agent = random.choice(USER_AGENTS)
+    config.request_timeout = 20
+    config.respect_robots = True
+    config.fetch_images = False
+    config.memoize_articles = False
+    config.verbose = False
+    return config
