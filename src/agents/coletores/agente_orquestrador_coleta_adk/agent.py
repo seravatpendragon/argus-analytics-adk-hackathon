@@ -27,6 +27,13 @@ try:
     from src.agents.coletores.agente_coletor_newsapi_adk.agent import AgenteColetorNewsAPI_ADK
     from src.agents.coletores.agente_coletor_rss_adk.agent import AgenteColetorRSS_ADK
     from src.agents.coletores.agente_coletor_regulatorios_adk.agent import AgenteColetorRegulatorios_ADK
+    from src.agents.coletores.agente_coletor_yfinance_adk.agent import AgenteColetorYfinance_ADK
+    from src.agents.coletores.agente_coletor_fundamentus_adk.agent import AgenteColetorFundamentus_ADK
+    from src.agents.coletores.agente_coletor_bcb_adk.agent import AgenteColetorBCB_ADK
+    from src.agents.coletores.agente_coletor_ibge_adk.agent import AgenteColetorIBGE_ADK
+    from src.agents.coletores.agente_coletor_fgv_adk.agent import AgenteColetorFGV_ADK
+    from src.agents.coletores.agente_coletor_fred_adk.agent import AgenteColetorFRED_ADK
+    from src.agents.coletores.agente_coletor_eia_adk.agent import AgenteColetorEIA_ADK
     
     from . import prompt as agent_prompt
 except ImportError as e:
@@ -54,7 +61,14 @@ AgenteOrquestradorColeta_ADK = ParallelAgent(
     sub_agents=[
         AgenteColetorNewsAPI_ADK,
         AgenteColetorRSS_ADK,
-        AgenteColetorRegulatorios_ADK
+        AgenteColetorRegulatorios_ADK,
+        AgenteColetorYfinance_ADK,
+        AgenteColetorFundamentus_ADK,
+        AgenteColetorBCB_ADK,
+        AgenteColetorIBGE_ADK,
+        AgenteColetorFGV_ADK,
+        AgenteColetorFRED_ADK,
+        AgenteColetorEIA_ADK
     ],
 )
 settings.logger.info(f"Agente Orquestrador Paralelo '{AgenteOrquestradorColeta_ADK.name}' carregado.")

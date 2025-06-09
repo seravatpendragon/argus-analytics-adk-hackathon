@@ -1,12 +1,14 @@
+from datetime import date
 import json
 import os
 from pathlib import Path
 
 import pandas as pd
+from requests_cache import datetime, timedelta
 from config import settings
 from src.data_collection.macro_data.bcb_collector import BCBCollector
 from src.database.db_utils import (
-    get_db_session, get_or_create_indicator_id,
+    get_db_session, get_latest_effective_date, get_or_create_indicator_id,
     get_or_create_data_source, batch_upsert_indicator_values
 )
 
@@ -43,23 +45,13 @@ def collect_and_store_bcb_indicators() -> str:
         all_data_to_upsert = []
         
         for task in manifest:
-            # Acessa o dicionário 'params' primeiro para obter os valores
-            task_params = task.get("params", {})
-            sgs_code = task_params.get("sgs_code")
-            start_date = task_params.get("initial_history_start_date", "01/01/2010")
-            
-            if not sgs_code:
-                logger.warning(f"Task no manifesto BCB sem 'sgs_code' em 'params': {task}")
-                continue
-    
-            # Busca os dados da série histórica
-            df = collector.get_series(sgs_code, start_date)
-            if df.empty:
-                logger.warning(f"Nenhum dado retornado para a série {sgs_code}, pulando.")
-                continue
+            if not task.get("enabled", False): continue
+
+            db_indicator_name = task['db_indicator_name']
+            sgs_code = task["params"]["sgs_code"]
 
             indicator_id = get_or_create_indicator_id(
-                session=session, indicator_name=task['db_indicator_name'],
+                session=session, indicator_name=db_indicator_name,
                 indicator_type=task.get('db_indicator_type', 'Macroeconomia'),
                 unit=task.get('db_indicator_unit', 'N/A'),
                 frequency=task.get('db_indicator_frequency', 'Diário'),
@@ -67,27 +59,38 @@ def collect_and_store_bcb_indicators() -> str:
             )
             if not indicator_id: continue
 
+            # --- LÓGICA DE COLETA INCREMENTAL ---
+            last_date = get_latest_effective_date(session, indicator_id)
+            start_date_obj = (last_date + timedelta(days=1)) if last_date else datetime.strptime(task["params"]["initial_history_start_date"], '%Y-%m-%d').date()
+            
+            if start_date_obj > date.today():
+                logger.info(f"Dados para '{db_indicator_name}' já estão atualizados. Pulando.")
+                continue
+                
+            logger.info(f"Coleta incremental para '{db_indicator_name}'. Última data: {last_date}. Buscando a partir de {start_date_obj}.")
+            # --- FIM DA LÓGICA ---
+            
+            df = collector.get_series(sgs_code, start_date_obj.strftime('%Y-%m-%d'))
+            if df.empty: continue
+
             for _, row in df.iterrows():
-                if pd.isna(row['value']): continue
                 all_data_to_upsert.append({
-                    "indicator_id": indicator_id,
-                    "company_id": None,
+                    "indicator_id": indicator_id, "company_id": None,
                     "effective_date": row['date'].date(),
                     "value_numeric": float(row['value']),
-                    "value_text": None,
-                    "segment_id": None
+                    "value_text": None, "segment_id": None
                 })
-
+        
         if not all_data_to_upsert:
-            return "Coleta concluída, mas nenhum registro válido foi preparado para inserção."
+            return "Coleta concluída, nenhum dado novo para ser inserido."
         
         rows_affected = batch_upsert_indicator_values(session, all_data_to_upsert)
         session.commit()
         
-        return f"Sucesso! Transação concluída. {rows_affected} registros de indicadores do BCB inseridos/atualizados."
+        return f"Sucesso! {rows_affected} novos registros de indicadores do BCB inseridos/atualizados."
 
     except Exception as e:
-        logger.critical(f"Erro crítico na ferramenta BCB, revertendo a transação: {e}", exc_info=True)
+        logger.critical(f"Erro crítico na ferramenta BCB, revertendo transação: {e}", exc_info=True)
         session.rollback()
         return f"Erro crítico na execução da ferramenta BCB, transação revertida: {e}"
     finally:
