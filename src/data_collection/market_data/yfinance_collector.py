@@ -1,44 +1,44 @@
-import pandas as pd
-from datetime import datetime
+import yfinance as yf
 from config import settings
 
-class YFinanceDataParser:
-    """
-    Classe com métodos estáticos para FORMATAR dados brutos do yfinance
-    para o padrão do nosso banco de dados.
-    """
-    @staticmethod
-    def parse_timeseries_data(df: pd.DataFrame, value_column_name: str) -> list[dict]:
-        """ Formata um DataFrame de série temporal (History, Dividends, Splits). """
-        if df is None or df.empty or value_column_name not in df.columns:
-            return []
-        
-        data_points = []
-        # Renomeia a coluna alvo para 'value' para um acesso padronizado
-        df_renamed = df.rename(columns={value_column_name: 'value'})
-        for date_index, row in df_renamed.iterrows():
-            try:
-                # Garante que o índice seja um timestamp e o valor seja um float
-                data_points.append({
-                    "effective_date": pd.to_datetime(date_index).date(),
-                    "value_numeric": float(row['value'])
-                })
-            except (ValueError, TypeError):
-                continue
-        return data_points
+logger = settings.logger
 
-    @staticmethod
-    def parse_info_data(info_dict: dict, key_from_info: str) -> list[dict]:
-        """ Formata um indicador específico do dicionário .info. """
-        data_points = []
-        # Checa se a chave existe e se o valor não é nulo
-        if key_from_info in info_dict and info_dict[key_from_info] is not None:
+class YFinanceCollector:
+    """
+    O "Engenheiro Especialista" para a biblioteca yfinance.
+    Sua única função é buscar os dados brutos de um tipo específico
+    (HISTORY, INFO, ACTIONS) para uma lista de tickers.
+    """
+    def fetch_data(self, tickers: list, data_type: str, params: dict = None):
+        logger.info(f"YFinanceCollector: Buscando dados do tipo '{data_type}' para {len(tickers)} tickers.")
+        params = params or {}
+        
+        if not tickers:
+            logger.warning("YFinanceCollector: Nenhuma lista de tickers fornecida.")
+            return None
+
+        data_by_ticker = {}
+        for ticker_symbol in tickers:
             try:
-                value = float(info_dict[key_from_info])
-                data_points.append({
-                    "effective_date": datetime.now().date(),
-                    "value_numeric": value
-                })
-            except (ValueError, TypeError):
-                settings.logger.warning(f"Não foi possível converter o valor para a chave de info '{key_from_info}'.")
-        return data_points
+                ticker_obj = yf.Ticker(ticker_symbol)
+                
+                if data_type == "HISTORY":
+                    data = ticker_obj.history(period=params.get("period", "1y"))
+                elif data_type == "INFO":
+                    data = ticker_obj.info
+                elif data_type == "ACTIONS":
+                    data = ticker_obj.actions
+                else:
+                    logger.warning(f"Tipo de dado desconhecido para o YFinanceCollector: '{data_type}'")
+                    continue
+                
+                if data is not None and not (hasattr(data, 'empty') and data.empty):
+                    data_by_ticker[ticker_symbol] = data
+                else:
+                    logger.debug(f"Nenhum dado do tipo '{data_type}' retornado para o ticker {ticker_symbol}.")
+
+            except Exception as e:
+                logger.error(f"Erro ao buscar dados do yfinance para {ticker_symbol}: {e}")
+                continue
+                
+        return data_by_ticker

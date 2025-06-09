@@ -40,7 +40,8 @@ else:
     raise ValueError("GEMINI_API_KEY não encontrada em settings.py!")
 
 # --- Definições do Agente ---
-MODELO_LLM_AGENTE = "gemini-1.5-flash-001"
+agente_config = settings.AGENT_CONFIGS.get("coletor", {})
+MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
 collect_rss_tool_adk_instance = FunctionTool(func=tool_collect_rss_articles)
 
 AgenteColetorRSS_ADK = Agent(

@@ -154,3 +154,41 @@ logger.info(f"Diretório base do projeto: {BASE_DIR}")
 logger.info(f"Logging configurado para nível: {LOGGING_LEVEL_STR}, arquivo: {LOG_FILE}")
 logger.info(f"GEMINI_API_KEY carregada com sucesso (não exibida por segurança).")
 
+#modelos llm
+AGENT_CONFIGS = {
+    "coletor": {
+        "model_name": "gemini-2.0-flash-lite-001",
+        "description": "Agentes para tarefas de coleta de dados simples e chamadas de ferramenta diretas.",
+        "model_config": {
+            "temperature": 0.1, # Baixa temperatura para previsibilidade
+        }
+    },
+    "extrator": {
+        "model_name": "gemini-2.0-flash-lite-001",
+        "description": "Agentes focados em extrair informação estruturada de textos não estruturados.",
+        "model_config": {
+            "temperature": 0.0, # Temperatura zero para máxima precisão na extração
+        }
+    },
+    "analista": {
+        "model_name": "gemini-1.5-pro-001",
+        "description": "Agentes que realizam análises, raciocínios e geram textos elaborados.",
+        "model_config": {
+            "temperature": 0.5, # Temperatura moderada para análises criativas mas focadas
+        }
+    },
+    "insight": {
+        "model_name": "gemini-1.5-pro-001",
+        "description": "Agentes de alto nível que buscam correlações e geram insights novos.",
+        "model_config": {
+            "temperature": 0.8, # Temperatura alta para máxima "criatividade" e geração de hipóteses
+        }
+    },
+    "moderador": {
+        "model_name": "gemini-1.5-flash-001",
+        "description": "Agentes que atuam como revisores ou mediadores em um fluxo.",
+        "model_config": {
+            "temperature": 0.3,
+        }
+    }
+}

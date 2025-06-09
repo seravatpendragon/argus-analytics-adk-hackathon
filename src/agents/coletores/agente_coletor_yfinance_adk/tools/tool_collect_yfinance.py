@@ -1,110 +1,121 @@
 import json
+import os
 from pathlib import Path
-import yfinance as yf
-import pandas as pd
 from datetime import datetime
+import pandas as pd
 from config import settings
-from sqlalchemy.orm import Session
-# Garanta que todas as funções de DB necessárias estão importadas
-from src.database.db_utils import get_db_session, get_or_create_indicator, batch_upsert_indicator_values, get_company_id_for_ticker
-# A classe que formata os dados
-from src.data_collection.market_data.yfinance_collector import YFinanceDataParser
+from src.data_collection.market_data.yfinance_collector import YFinanceCollector
+from src.database.db_utils import (
+    get_db_session, get_all_tickers, get_or_create_indicator_id,
+    get_or_create_data_source, get_company_id_for_ticker, batch_upsert_indicator_values
+)
 
-def load_json_config(config_path: Path) -> list:
-    """Carrega um arquivo de configuração JSON que se espera ser uma lista."""
-    if not config_path.exists():
-        raise FileNotFoundError(f"Arquivo de configuração não encontrado: {config_path}")
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+logger = settings.logger
 
-def tool_collect_yfinance_data() -> dict:
+# --- BLOCO DE DETECÇÃO DE CAMINHO (A CORREÇÃO) ---
+try:
+    # O caminho deste arquivo é: .../src/agents/coletores/agente_coletor_yfinance_adk/tools/
+    # A raiz do projeto está 6 níveis acima.
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+except NameError:
+    PROJECT_ROOT = Path(os.getcwd())
+# --- FIM DO BLOCO ---
+
+
+def collect_and_store_yfinance_indicators() -> str:
     """
-    Coleta todos os tipos de dados do Yahoo Finance, cria os metadados dos indicadores
-    e persiste os valores no banco de dados.
+    Ferramenta inteligente que lê um manifesto, busca tickers do banco
+    e orquestra a coleta de dados de empresas E de indicadores macro.
     """
-    settings.logger.info("Ferramenta 'tool_collect_yfinance_data' (versão final) iniciada...")
-    db_session: Session | None = None
+    logger.info("Iniciando a ferramenta de coleta do YFinance (Manifest-Driven - vFinal-Corrigida).")
+    
+    # Usa a variável PROJECT_ROOT que acabamos de definir
+    manifest_path = PROJECT_ROOT / "config" / "yfinance_indicators_config.json"
     try:
-        db_session = get_db_session()
-        config_path = Path(settings.BASE_DIR) / "config" / "yfinance_indicators_config.json"
-        config_list = load_json_config(config_path)
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+    except FileNotFoundError:
+        return f"Erro crítico: Manifesto de coleta não encontrado em {manifest_path}"
+
+    session = get_db_session()
+    try:
+        company_tickers = get_all_tickers(session)
+        yfinance_source_id = get_or_create_data_source(session, "YFinance")
+        ticker_to_company_id = {ticker: get_company_id_for_ticker(session, ticker) for ticker in company_tickers}
         
-        parser = YFinanceDataParser()
-        all_values_to_persist = []
+        all_data_to_upsert = []
+        collector = YFinanceCollector()
 
-        # 1. Agrupa todos os tickers para um download eficiente em lote
-        tickers_to_fetch = list(set(
-            conf.get("params", {}).get("ticker_symbol")
-            for conf in config_list if conf.get("enabled") and conf.get("params", {}).get("ticker_symbol")
-        ))
-        if not tickers_to_fetch:
-            return {"status": "success", "message": "Nenhum ticker habilitado para coleta."}
-
-        settings.logger.info(f"Fazendo download em lote para {len(tickers_to_fetch)} tickers...")
-        yf_tickers_obj = yf.Tickers(" ".join(tickers_to_fetch))
-        settings.logger.info("Download em lote concluído.")
-
-        # 2. Itera na configuração para processar cada indicador
-        for conf in config_list:
-            if not conf.get("enabled"):
-                continue
-
-            # ETAPA ESSENCIAL QUE ESTAVA FALTANDO:
-            # Para cada indicador na config, primeiro garantimos que ele exista na tabela
-            # de metadados 'EconomicIndicators' e pegamos seu ID.
-            indicator_obj = get_or_create_indicator(
-                session=db_session,
-                name=conf["db_indicator_name"],
-                source_name=conf.get("source_api", "YFINANCE"),
-                indicator_type=conf["db_indicator_type"],
-                frequency=conf["db_indicator_frequency"],
-                unit=conf["db_indicator_unit"]
-            )
-            if not indicator_obj:
-                settings.logger.warning(f"Não foi possível criar metadado para o indicador: {conf['db_indicator_name']}")
-                continue
-
-            ticker_symbol = conf.get("params", {}).get("ticker_symbol")
-            ticker_data = yf_tickers_obj.tickers.get(ticker_symbol)
-            if not ticker_data:
-                continue
-
-            data_type = conf.get("yfinance_data_type", "").upper()
-            prepared_data = []
-
-            # Delega a formatação para o Parser especialista
-            if data_type == "INFO":
-                key_from_info = conf.get("params", {}).get("value_column_yfinance")
-                prepared_data = parser.parse_info_data(ticker_data.info, key_from_info)
-            elif data_type in ["HISTORY", "DIVIDENDS", "SPLITS"]:
-                # ... (lógica para chamar o parse_timeseries_data como antes)
-                raw_df = pd.DataFrame()
-                if data_type == "HISTORY": raw_df = ticker_data.history(period="5y", interval="1d")
-                elif data_type == "DIVIDENDS": raw_df = ticker_data.dividends.to_frame()
-                elif data_type == "SPLITS": raw_df = ticker_data.splits.to_frame()
+        # --- Processar Templates para Empresas ---
+        if company_tickers:
+            logger.info(f"Iniciando coleta de dados para {len(company_tickers)} empresas...")
+            for template in manifest.get("company_indicator_templates", []):
+                data_type = template["yfinance_data_type"]
+                params = template.get("params", {})
                 
-                value_col = conf.get("params", {}).get("value_column_yfinance", raw_df.columns[0] if not raw_df.empty else None)
-                if value_col:
-                    prepared_data = parser.parse_timeseries_data(raw_df, value_col)
+                raw_data_company = collector.fetch_data(company_tickers, data_type, params)
+                if not raw_data_company: continue
 
-            # Vincula o ID do indicador e o ID da empresa a cada ponto de dado
-            company_id = get_company_id_for_ticker(db_session, ticker_symbol) if ticker_symbol else None
-            for data_point in prepared_data:
-                data_point["indicator_id"] = indicator_obj.indicator_id
-                data_point["company_id"] = company_id
-                all_values_to_persist.append(data_point)
+                if data_type == "HISTORY":
+                    for ticker, df in raw_data_company.items():
+                        company_id = ticker_to_company_id.get(ticker)
+                        if not company_id: continue
+                        
+                        for date, row in df.iterrows():
+                            for col_name, col_config in template["value_columns"].items():
+                                if col_name not in df.columns: continue
+                                indicator_name = f"{ticker} {col_config['db_indicator_name_suffix']}"
+                                indicator_id = get_or_create_indicator_id(session, indicator_name, col_config['db_indicator_type'], 'Diário', col_config.get('db_indicator_unit', 'N/A'), yfinance_source_id)
+                                if not indicator_id: continue
+                                value = row[col_name]
+                                if pd.isna(value): continue
+                                all_data_to_upsert.append({"indicator_id": indicator_id, "company_id": company_id, "effective_date": date.date(), "value_numeric": float(value), "value_text": None, "segment_id": None})
+                
+                elif data_type == "INFO":
+                    today_date = datetime.now().date()
+                    for ticker, info_dict in raw_data_company.items():
+                        company_id = ticker_to_company_id.get(ticker)
+                        if not company_id: continue
+                        for field_name, field_config in template["info_fields"].items():
+                            raw_value = info_dict.get(field_name)
+                            if raw_value is None: continue
+                            indicator_name = f"{ticker} {field_config['db_indicator_name_suffix']}"
+                            indicator_id = get_or_create_indicator_id(session, indicator_name, field_config['db_indicator_type'], 'Diário', field_config.get('db_indicator_unit', 'N/A'), yfinance_source_id)
+                            if not indicator_id: continue
+                            numeric_value, text_value = None, str(raw_value)
+                            try:
+                                numeric_value = float(raw_value)
+                                text_value = None
+                            except (ValueError, TypeError): pass
+                            all_data_to_upsert.append({"indicator_id": indicator_id, "company_id": company_id, "effective_date": today_date, "value_numeric": numeric_value, "value_text": text_value, "segment_id": None})
 
-        if not all_values_to_persist:
-            return {"status": "success", "message": "Nenhum dado novo para inserir."}
-            
-        num_inserted = batch_upsert_indicator_values(db_session, all_values_to_persist)
-        db_session.commit()
-        
-        return {"status": "success", "message": f"Coleta YFinance concluída. {num_inserted} novos pontos de dados inseridos."}
+        # --- Processar Tarefas Macro ---
+        logger.info("Iniciando coleta de dados para indicadores macro...")
+        for task in manifest.get("macro_indicator_tasks", []):
+            task_params = task.get("params", {})
+            macro_ticker = task_params.get("ticker_symbol")
+            if not macro_ticker: continue
+            raw_data_macro = collector.fetch_data([macro_ticker], "HISTORY", task_params)
+            if not raw_data_macro or macro_ticker not in raw_data_macro: continue
+            df_macro = raw_data_macro[macro_ticker]
+            value_col = task_params.get("value_column_yfinance", "Close")
+            indicator_id = get_or_create_indicator_id(session, task['db_indicator_name'], 'Índice de Mercado', 'Diário', 'Pontos', yfinance_source_id)
+            if not indicator_id: continue
+            for date, row in df_macro.iterrows():
+                value = row[value_col]
+                if pd.isna(value): continue
+                all_data_to_upsert.append({"indicator_id": indicator_id, "company_id": None, "effective_date": date.date(), "value_numeric": float(value), "value_text": None, "segment_id": None})
+
+        # --- Persistir Dados ---
+        if not all_data_to_upsert:
+            return "Coleta concluída, mas nenhum registro válido foi preparado para inserção."
+        rows_affected = batch_upsert_indicator_values(session, all_data_to_upsert)
+        session.commit()
+        return f"Sucesso! Transação concluída. {rows_affected} registros do YFinance inseridos/atualizados."
 
     except Exception as e:
-        if db_session: db_session.rollback()
-        settings.logger.error(f"Erro CRÍTICO na ferramenta YFinance: {e}", exc_info=True)
-        return {"status": "error", "message": str(e)}
+        logger.critical(f"Erro crítico na ferramenta YFinance, revertendo a transação: {e}", exc_info=True)
+        session.rollback()
+        return f"Erro crítico na execução da ferramenta YFinance, transação revertida: {e}"
     finally:
-        if db_session: db_session.close()
+        session.close()

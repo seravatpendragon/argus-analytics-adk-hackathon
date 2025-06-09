@@ -39,7 +39,8 @@ if settings.GEMINI_API_KEY:
 else:
     raise ValueError("GEMINI_API_KEY não encontrada em config/settings.py. O agente não pode se autenticar.")
 # --- Definições do Agente (Padrão ADK) ---
-MODELO_LLM_AGENTE = "gemini-1.5-flash-001"
+agente_config = settings.AGENT_CONFIGS.get("coletor", {})
+MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
 
 # 1. Instancia a ferramenta no formato do ADK
 collect_fundamentus_tool_adk_instance = FunctionTool(func=collect_and_store_fundamentus_indicators)

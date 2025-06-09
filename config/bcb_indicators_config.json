@@ -12,7 +12,7 @@
       "sgs_code": 432,
       "file_part": "Selic_Meta_Definida_Copom",
       "source_desc": "BCB-SGS-432 Taxa de juros - Selic - Meta Selic definida pelo Copom",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -28,7 +28,7 @@
       "sgs_code": 1178,
       "file_part": "Selic_Efetiva_Diaria_Anualizada",
       "source_desc": "BCB-SGS-11 Taxa de juros - Selic efetiva - acumulada no mês - média diária",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -44,7 +44,7 @@
       "sgs_code": 433,
       "file_part": "IPCA_Mensal",
       "source_desc": "BCB-SGS-433 IPCA - Variação mensal",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -60,7 +60,7 @@
       "sgs_code": 189,
       "file_part": "IGPM_Mensal",
       "source_desc": "BCB-SGS-189 IGP-M - Variação mensal",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -76,7 +76,7 @@
       "sgs_code": 10813, 
       "file_part": "Cambio_USD_PTAX_Venda",
       "source_desc": "BCB-SGS-10813 Dólar americano PTAX Venda diário",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -92,7 +92,7 @@
       "sgs_code": 24364,
       "file_part": "IBC_Br_Ajustado",
       "source_desc": "BCB-SGS-24364 IBC-Br com ajuste sazonal (2002=100)",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
 
@@ -109,7 +109,7 @@
       "sgs_code": 20630, 
       "file_part": "Inadimplencia_PF_Rec_Livres",
       "source_desc": "BCB-SGS-20630 Inadimplência PF Recursos Livres",
-      "initial_history_start_date": "2011-03-01" 
+      "initial_history_start_date": "2020-01-01" 
     }
   },
   {
@@ -125,7 +125,7 @@
       "sgs_code": 20642,
       "file_part": "Inadimplencia_PJ_Rec_Livres",
       "source_desc": "BCB-SGS-20642 Inadimplência PJ Recursos Livres",
-      "initial_history_start_date": "2011-03-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -141,7 +141,7 @@
       "sgs_code": 20570,
       "file_part": "Credito_PF_Saldo_Total",
       "source_desc": "BCB-SGS-20570 Saldo da carteira de crédito - Pessoas físicas - Total",
-      "initial_history_start_date": "2010-03-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -157,7 +157,7 @@
       "sgs_code": 20543,
       "file_part": "Credito_PJ_Saldo_Total",
       "source_desc": "BCB-SGS-20543 Saldo da carteira de crédito - Pessoas jurídicas - Total",
-      "initial_history_start_date": "2010-03-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -173,7 +173,7 @@
       "sgs_code": 4513,
       "file_part": "Divida_Liquida_Setor_Publico_PIB",
       "source_desc": "BCB-SGS-4513 Dívida líquida do setor público (%PIB)",
-      "initial_history_start_date": "2010-12-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -189,7 +189,7 @@
       "sgs_code": 4189,
       "file_part": "Divida_Bruta_Governo_Geral_PIB",
       "source_desc": "BCB-SGS-4189 Dívida bruta do governo geral (%PIB)",
-      "initial_history_start_date": "2010-12-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -205,7 +205,7 @@
       "sgs_code": 5730,
       "file_part": "Resultado_Nominal_SP_PIB",
       "source_desc": "BCB-SGS-5730 Resultado nominal do setor público consolidado (%PIB)",
-      "initial_history_start_date": "2010-12-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -221,7 +221,7 @@
       "sgs_code": 5760,
       "file_part": "Juros_Nominais_Pagos_R$_12m",
       "source_desc": "BCB-SGS-5760 Juros nominais - Setor público consolidado - Acumulado em 12 meses",
-      "initial_history_start_date": "2010-12-01"
+      "initial_history_start_date": "2020-01-01"
     }
   },
   {
@@ -237,7 +237,7 @@
       "sgs_code": 4382,
       "file_part": "PIB_Acumulado_12m_R$_Corrente",
       "source_desc": "BCB-SGS-4382 PIB acumulado nos últimos 12 meses",
-      "initial_history_start_date": "2010-01-01"
+      "initial_history_start_date": "2020-01-01"
     }
   }
 ]

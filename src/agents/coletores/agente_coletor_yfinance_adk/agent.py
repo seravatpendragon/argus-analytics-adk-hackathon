@@ -24,7 +24,7 @@ try:
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
     from google.genai import types
-    from .tools.tool_collect_yfinance import tool_collect_yfinance_data
+    from .tools.tool_collect_yfinance import collect_and_store_yfinance_indicators
     from . import prompt as agente_prompt
 except ImportError as e:
     import logging
@@ -43,8 +43,9 @@ else:
 
 
 # --- Definições do Agente ---
-MODELO_LLM_AGENTE = "gemini-1.5-flash-001"
-collect_yfinace_tool_adk_instance = FunctionTool(func=tool_collect_yfinance_data)
+agente_config = settings.AGENT_CONFIGS.get("coletor", {})
+MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
+collect_yfinace_tool_adk_instance = FunctionTool(func=collect_and_store_yfinance_indicators)
 
 # CORREÇÃO: O construtor do Agent volta a ser limpo, sem o parâmetro api_key.
 AgenteColetorYfinance_ADK = Agent(

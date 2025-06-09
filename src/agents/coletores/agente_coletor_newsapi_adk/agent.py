@@ -43,7 +43,8 @@ else:
 
 
 # --- Definições do Agente ---
-MODELO_LLM_AGENTE = "gemini-1.5-flash-001"
+agente_config = settings.AGENT_CONFIGS.get("coletor", {})
+MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
 collect_newsapi_tool_adk_instance = FunctionTool(func=tool_collect_newsapi_articles)
 
 # CORREÇÃO: O construtor do Agent volta a ser limpo, sem o parâmetro api_key.
