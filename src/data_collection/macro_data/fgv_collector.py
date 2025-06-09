@@ -11,7 +11,8 @@ class FGVCollector:
     def __init__(self):
         # O caminho para a pasta de dados é relativo à raiz do projeto
         try:
-            self.data_path = Path(__file__).resolve().parent.parent.parent / "data" / "config_input"
+            project_root = Path(__file__).resolve().parent.parent.parent.parent
+            self.data_path = project_root / "data" / "config_input"
         except NameError:
             self.data_path = Path.cwd() / "data" / "config_input"
 
