@@ -91,11 +91,11 @@ if __name__ == '__main__':
                 print(event.content.parts[0].text)
 
         print("\n--- Resumo do Teste ---")
-        print(f"✅ SUCESSO: O pipeline de orquestração foi executado sem erros de programação.")
+        print(f"SUCESSO: O pipeline de orquestração foi executado sem erros de programação.")
 
     try:
         asyncio.run(run_orchestrator_test())
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado: {e}", exc_info=True)
+        settings.logger.critical(f"FALHA: Ocorreu um erro inesperado: {e}", exc_info=True)
 
     settings.logger.info(f"--- Fim do Teste de Orquestração ---")
