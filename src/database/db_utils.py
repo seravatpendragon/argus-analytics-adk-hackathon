@@ -5,7 +5,7 @@ import re
 import sys
 import os
 from venv import logger
-from sqlalchemy import create_engine, select, func, text
+from sqlalchemy import create_engine, or_, select, func, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects import postgresql
@@ -545,35 +545,19 @@ def get_or_create_data_source(session: Session, source_name: str) -> int:
         logger.info(f"Nova fonte de dados preparada para inserção: '{source_name}' (ID: {new_source.econ_data_source_id})")
         return new_source.econ_data_source_id
     
-def get_articles_pending_extraction(session: Session, limit: int = 10) -> list[NewsArticle]:
+def get_articles_pending_extraction(session: Session, limit: int = 20) -> list[NewsArticle]:
     """
-    Busca no banco de dados uma lista de artigos cujo texto completo ainda não foi extraído.
-    Filtra pelo status 'pending_full_text_fetch'.
+    Busca no banco de dados uma lista de artigos cujo texto completo ainda não foi extraído,
+    incluindo aqueles que estão prontos para retentativa.
     """
-    settings.logger.info(f"Buscando até {limit} artigos com status 'pending_full_text_fetch'...")
-    articles = session.query(NewsArticle)\
-        .filter(NewsArticle.processing_status == 'pending_full_text_fetch')\
-        .limit(limit)\
-        .all()
-    settings.logger.info(f"Encontrados {len(articles)} artigos pendentes de extração.")
-    return articles
+    settings.logger.info(f"Buscando até {limit} artigos pendentes ou para retentativa de extração...")
 
-def update_article_with_full_text(session: Session, article_id: int, text_content: str, new_status: str) -> bool:
-    """
-    Atualiza um artigo específico no banco de dados com o texto completo extraído
-    e atualiza seu status de processamento.
-    """
-    try:
-        article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
-        if article:
-            article.article_text_content = text_content
-            article.processing_status = new_status
-            article.last_processed_at = datetime.now(timezone.utc)
-            settings.logger.info(f"Artigo ID {article_id} atualizado com texto completo e novo status '{new_status}'.")
-            # A transação será 'commitada' pela ferramenta que chama esta função.
-            return True
-        settings.logger.warning(f"Artigo ID {article_id} não encontrado para atualização.")
-        return False
-    except Exception as e:
-        settings.logger.error(f"Erro ao tentar atualizar o artigo ID {article_id}: {e}", exc_info=True)
-        return False
+    articles = session.query(NewsArticle).filter(
+        or_(
+            NewsArticle.processing_status == 'pending_full_text_fetch',
+            (NewsArticle.processing_status == 'pending_extraction_retry') & (NewsArticle.next_retry_at <= datetime.now())
+        )
+    ).order_by(NewsArticle.next_retry_at.asc().nulls_first(), NewsArticle.collection_date.asc()).limit(limit).all()
+
+    settings.logger.info(f"Encontrados {len(articles)} artigos para extração/retentativa.")
+    return articles

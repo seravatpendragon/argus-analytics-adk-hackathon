@@ -490,41 +490,6 @@
         "assessment_date": "2025-05-29",
         "notes": "Revista semanal brasileira."
     },
-    "gazetadopovo.com.br": {
-        "source_name": "Gazeta do Povo",
-        "overall_credibility_score": 0.60,
-        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
-        "assessment_date": "2025-05-29",
-        "notes": "Jornal do Paraná."
-    },
-    "opovo.com.br": { 
-        "source_name": "O Povo",
-        "overall_credibility_score": 0.60,
-        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
-        "assessment_date": "2025-05-29",
-        "notes": "Jornal do Ceará."
-    },
-    "www.clicrbs.com.br": {
-        "source_name": "clic rbs",
-        "overall_credibility_score": 0.60,
-        "craap_scores": {"currency": 1.0, "relevance": 0.3, "authority": 0.6, "accuracy": 0.6, "purpose": 0.5},
-        "assessment_date": "2025-05-29",
-        "notes": "Jornal do Rio Grande do Sul."
-    },
-    "blogdobg.com.br": { 
-        "source_name": "Blog do BG",
-        "overall_credibility_score": 0.60,
-        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.5, "accuracy": 0.6, "purpose": 0.5},
-        "assessment_date": "2025-05-29",
-        "notes": "Blog de notícias. VERIFICAR DOMÍNIO E FOCO."
-    },
-    "blogdomagno.com.br": { 
-        "source_name": "Blog do Magno",
-        "overall_credibility_score": 0.60,
-        "craap_scores": {"currency": 1.0, "relevance": 0.4, "authority": 0.5, "accuracy": 0.6, "purpose": 0.5},
-        "assessment_date": "2025-05-29",
-        "notes": "Blog de notícias. VERIFICAR DOMÍNIO E FOCO."
-    },
     "foxnews.com": {
         "source_name": "Fox News",
         "overall_credibility_score": 0.56,

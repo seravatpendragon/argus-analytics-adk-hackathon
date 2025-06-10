@@ -238,13 +238,6 @@
         "target_segment_name": null
     },
     {
-        "source_name": "\"ECB monetary policy\" (2)",
-        "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/9355162333828576307",
-        "category": "Google Alert - Política Monetária Global",
-        "target_company_ticker": null,
-        "target_segment_name": null
-    },
-    {
         "source_name": "\"Eleições\" + impacto econômico OR propostas",
         "feed_url": "https://www.google.com.br/alerts/feeds/11618156152729757461/10963467990447576661",
         "category": "Google Alert - Política/Econômia Brasil",

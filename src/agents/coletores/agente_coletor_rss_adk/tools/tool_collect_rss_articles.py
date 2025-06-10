@@ -21,10 +21,11 @@ def load_json_file(file_path: Path) -> list | None:
         settings.logger.error(f"Erro ao ler {file_path}: {e}", exc_info=True)
         return None
 
-def tool_collect_rss_articles(tool_context=None) -> dict:
-    """ Coleta artigos de Feeds RSS com base nas configurações do arquivo 'rss_news_config.json'. """
+def tool_collect_rss_articles() -> dict:
+    """ Coleta artigos de Feeds RSS e os persiste no banco de dados. """
     settings.logger.info("Ferramenta 'tool_collect_rss_articles' iniciada...")
     db_session: Session | None = None
+    collector: RSSCollector | None = None # Inicia como None
     try:
         db_session = get_db_session()
         
@@ -81,4 +82,8 @@ def tool_collect_rss_articles(tool_context=None) -> dict:
         settings.logger.error(f"Erro na ferramenta tool_collect_rss_articles: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}
     finally:
-        if db_session: db_session.close()
+        # GARANTE QUE O NAVEGADOR SEJA FECHADO NO FINAL
+        if collector:
+            collector.close()
+        if db_session:
+            db_session.close()

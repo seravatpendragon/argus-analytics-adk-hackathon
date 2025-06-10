@@ -76,8 +76,10 @@ class NewsSource(Base):
     __tablename__ = "NewsSources"
     news_source_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
-    base_credibility_score = Column(Float, nullable=True)
+    base_credibility_score = Column(Float, nullable=True) 
+    craap_analysis_json = Column(JSON, nullable=True)
     url_base = Column(String, nullable=True)
+    craap_status = Column(String(50), nullable=False, default='pending_craap_analysis')
     articles = relationship("NewsArticle", back_populates="news_source")
 
 class NewsArticle(Base):
@@ -97,6 +99,11 @@ class NewsArticle(Base):
     last_processed_at = Column(DateTime(timezone=True), nullable=True)
     source_feed_name = Column(String(255), nullable=True)
     source_feed_url = Column(Text, nullable=True)
+    original_url = Column(Text, nullable=True) # Para armazenar a URL original (ex: do Google)
+    is_redirected = Column(Boolean, default=False) # Para sabermos se o link foi resolvido
+    # NOVOS CAMPOS PARA O MECANISMO DE RETENTATIVA:
+    retries_count = Column(Integer, default=0, nullable=False) # Contagem de tentativas
+    next_retry_at = Column(DateTime(timezone=True), nullable=True) # Próxima data de retentativa
     news_source = relationship("NewsSource", back_populates="articles")
     company_links = relationship("NewsArticleCompanyLink", back_populates="news_article")
     segment_links = relationship("NewsArticleSegmentLink", back_populates="news_article")
