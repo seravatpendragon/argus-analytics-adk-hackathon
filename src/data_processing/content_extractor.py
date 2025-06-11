@@ -1,8 +1,9 @@
+#.src/data_processing/content_extractor.py
 import io
 import time
 import random
 import zipfile
-from PyPDF2 import PdfReader # Importação necessária
+from PyPDF2 import PdfReader 
 import pdfplumber
 import requests
 import urllib.robotparser
@@ -30,10 +31,13 @@ class ContentExtractor:
             'request_timeout': 10,
             'follow_meta_refresh': True
         }
-        self.selenium_options = self._setup_chrome_options()
         self.request_headers = {'User-Agent': random.choice(settings.USER_AGENTS)}
 
-    def _setup_chrome_options(self):
+    def _setup_chrome_options(self, user_agent: str = None):
+        """
+        Configura e retorna um NOVO objeto Options do Chrome.
+        Permite adicionar um user_agent específico.
+        """
         options = Options()
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
@@ -42,6 +46,8 @@ class ContentExtractor:
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
+        if user_agent:
+            options.add_argument(f"user-agent={user_agent}")
         return options
 
     def _is_allowed_by_robots(self, url: str) -> bool:
@@ -190,24 +196,33 @@ class ContentExtractor:
             article.download()
             article.parse()
             if article.text and len(article.text) > 250:
-                settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k para {url}.")
+                settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k para {url}. Tamanho: {len(article.text)} chars. Conteúdo (primeiros 200 chars): {article.text[:200]}...")
                 return article.text
+            else:
+                settings.logger.debug(f"Newspaper3k falhou ou extraiu pouco texto (<250 chars) para {url}. Tamanho: {len(article.text) if article.text else 0} chars.")
         except Exception as e:
-            settings.logger.debug(f"Newspaper3k falhou para {url}: {e}")
+            settings.logger.debug(f"Newspaper3k falhou completamente para {url}: {e}")
             pass
 
         # Fallback com Selenium
         driver = None
         try:
-            options = self.selenium_options.copy()
-            options.add_argument(f"user-agent={random.choice(settings.USER_AGENTS)}")
+            user_agent = random.choice(settings.USER_AGENTS)
+            options = self._setup_chrome_options(user_agent=user_agent)
+            
             service = Service(executable_path=self.driver_path)
             driver = webdriver.Chrome(service=service, options=options)
             driver.set_page_load_timeout(30)
             driver.get(url)
             
+            # ADICIONADO: Um pequeno delay para dar tempo à página de carregar JavaScript.
+            # No notebook, você usa 3 segundos. Vamos tentar um valor conservador aqui.
+            time.sleep(random.uniform(2, 4)) 
+            
+            # Espera mais inteligente por elementos do corpo do texto, seletor mais específico
             WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.XPATH, "//body"))
+                EC.presence_of_element_located((By.CSS_SELECTOR, "body article, body .main-content, body .post, body p"))
+                # Adicionado 'body p' como fallback para garantir que pelo menos algum texto de parágrafo esteja presente
             )
             
             # Tentativa com Newspaper no HTML renderizado
@@ -215,22 +230,35 @@ class ContentExtractor:
                 article = Article("", config=self.newspaper_config)
                 article.set_html(driver.page_source)
                 article.parse()
-                if len(article.text) > 250:
-                    settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k (Selenium renderizado) para {url}.")
+                if article.text and len(article.text) > 250:
+                    settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k (Selenium renderizado) para {url}. Tamanho: {len(article.text)} chars. Conteúdo (primeiros 200 chars): {article.text[:200]}...")
                     return article.text
+                else:
+                    settings.logger.debug(f"Newspaper3k (Selenium renderizado) falhou ou extraiu pouco texto (<250 chars) para {url}. Tamanho: {len(article.text) if article.text else 0} chars.")
             except Exception as e:
-                settings.logger.debug(f"Newspaper3k (Selenium renderizado) falhou para {url}: {e}")
+                settings.logger.debug(f"Newspaper3k (Selenium renderizado) falhou completamente para {url}: {e}")
                 pass
             
-            # Fallback genérico
+            # Fallback genérico com BeautifulSoup
             soup = BeautifulSoup(driver.page_source, "html.parser")
-            main_content = soup.select_one('article, .main-content, .post')
+            
+            # Tenta seletores mais específicos para o conteúdo principal
+            main_content = soup.select_one('article, .main-content, .post, .content-body, .article-body, #content-main')
+            
+            extracted_text = ""
             if main_content:
-                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (seletor) para {url}.")
-                return main_content.get_text("\n", strip=True)
+                extracted_text = main_content.get_text("\n", strip=True)
+                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (seletor) para {url}. Tamanho: {len(extracted_text)} chars. Conteúdo (primeiros 200 chars): {extracted_text[:200]}...")
             else:
-                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (body) para {url}.")
-                return soup.body.get_text("\n", strip=True)
+                # Se nenhum seletor específico funcionar, tenta o corpo inteiro
+                extracted_text = soup.body.get_text("\n", strip=True)
+                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (body fallback) para {url}. Tamanho: {len(extracted_text)} chars. Conteúdo (primeiros 200 chars): {extracted_text[:200]}...")
+            
+            if len(extracted_text) > 250: # Verificação para garantir texto significativo
+                return extracted_text
+            else:
+                settings.logger.warning(f"Extração HTML com BeautifulSoup (ambos seletores) resultou em pouco texto (<250 chars) para {url}. Tamanho: {len(extracted_text)} chars.")
+                return None # Retorna None se o texto for insignificante
                 
         except Exception as e:
             settings.logger.error(f"Erro Selenium para {url}: {e}")
@@ -253,4 +281,13 @@ class ContentExtractor:
             return self._handle_cvm_document_page(url)
         else:
             settings.logger.info(f"URL não CVM: {url}. Usando _extract_with_html_strategies.")
-            return self._extract_with_html_strategies(url)
+            # O texto extraído é retornado aqui. O que a sua aplicação faz com ele?
+            extracted_content = self._extract_with_html_strategies(url)
+            
+            # Adicionado log para ver o que é retornado antes de sair do método público
+            if extracted_content:
+                settings.logger.info(f"Conteúdo extraído com sucesso para {url}. Tamanho final: {len(extracted_content)} chars.")
+            else:
+                settings.logger.warning(f"Nenhum conteúdo válido extraído para {url}.")
+            
+            return extracted_content

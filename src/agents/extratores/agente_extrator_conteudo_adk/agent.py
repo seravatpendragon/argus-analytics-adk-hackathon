@@ -51,10 +51,10 @@ if __name__ == '__main__':
                     erros += 1
 
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA GERAL NO PIPELINE DE EXTRAÇÃO: {e}", exc_info=True)
+        settings.logger.critical(f"FALHA GERAL NO PIPELINE DE EXTRAÇÃO: {e}", exc_info=True)
     finally:
         print("\n--- Resumo da Execução ---")
-        print(f"✅ Pipeline de extração concluído.")
+        print(f"Pipeline de extração concluído.")
         print(f"Artigos com Sucesso (ou pulados corretamente): {sucessos}")
         print(f"Artigos com Falha: {erros}")
         settings.logger.info("--- Fim do Pipeline de Extração ---")
