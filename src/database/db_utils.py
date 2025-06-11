@@ -65,12 +65,6 @@ def get_db_session() -> Session:
     settings.logger.debug("db_utils: Nova sessão do banco criada.")
     return session
 
-# --- Funções Get-Or-Create para Entidades ---
-# (Mantendo as funções get_or_create_economic_sector, get_or_create_subsector, 
-#  get_or_create_segment, get_or_create_company como na sua versão funcional do asset_loader.py)
-# ... COLE AQUI AS SUAS FUNÇÕES get_or_create_economic_sector, get_or_create_subsector, 
-# ... get_or_create_segment, get_or_create_company que estavam funcionando no asset_loader.py ...
-# ... Certifique-se que elas usem session.commit() após um session.add() de um novo objeto ...
         
 def get_segment_id_by_name(session: Session, segment_name: str) -> int | None:
     """
@@ -561,3 +555,12 @@ def get_articles_pending_extraction(session: Session, limit: int = 20) -> list[N
 
     settings.logger.info(f"Encontrados {len(articles)} artigos para extração/retentativa.")
     return articles
+def update_article_with_full_text(session: Session, article_id: int, text_content: str | None, new_status: str):
+    """
+    Atualiza um artigo específico no banco de dados com o texto completo extraído
+    e atualiza seu status de processamento.
+    """
+    # Esta função foi simplificada, pois a ferramenta agora manipula o objeto diretamente.
+    # No entanto, a deixaremos aqui caso seja útil para outros módulos.
+    # A lógica principal de atualização agora está na própria ferramenta.
+    pass

@@ -1,96 +1,60 @@
 import os
 import sys
 from pathlib import Path
-import json
 import asyncio
 
 # --- Bloco Padrão de Configuração e Imports ---
 try:
-    # CORREÇÃO: Padronizando o sys.path para consistência com outros agentes
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    # sobe 3 níveis: /extratores, /agents, /src -> chega na raiz do projeto
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
+    if str(PROJECT_ROOT) not in sys.path: sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from config import settings
-    from google.adk.agents import Agent
-    from google.adk.tools import FunctionTool
-    from google.adk.runners import Runner
-    from google.adk.sessions import InMemorySessionService
-    # CORREÇÃO: Importando 'types' da biblioteca correta
-    from google.genai import types
-    
-    # Lembre-se de importar as DUAS novas ferramentas
-    from .tools.tool_fetch_articles_pending_extraction import tool_fetch_articles_pending_extraction
-    from .tools.tool_extract_and_save_content import tool_extract_and_save_content
-    from . import prompt as agente_prompt
+    from src.agents.extratores.agente_extrator_conteudo_adk.tools.tool_fetch_articles_pending_extraction import tool_fetch_articles_pending_extraction
+    from src.agents.extratores.agente_extrator_conteudo_adk.tools.tool_extract_and_save_content import tool_extract_and_save_content
 except ImportError as e:
     import logging
-    logging.basicConfig(level=logging.INFO)
     _logger = logging.getLogger(__name__)
-    _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteExtratorDeConteudo: {e}", exc_info=True)
+    _logger.critical(f"Erro CRÍTICO de import no script extrator: {e}", exc_info=True)
     sys.exit(1)
 
 
-# --- Bloco de autenticação ---
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em config/settings.py.")
-
-# --- Definições do Agente ---
-agente_config = settings.AGENT_CONFIGS.get("extrator", {})
-MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
-
-fetch_tool = FunctionTool(func=tool_fetch_articles_pending_extraction)
-extract_tool = FunctionTool(func=tool_extract_and_save_content)
-
-AgenteExtratorDeConteudo_ADK = Agent(
-    name="agente_extrator_conteudo_v1",
-    model=MODELO_LLM_AGENTE,
-    description="Agente que orquestra a extração do texto completo de artigos de notícias.",
-    instruction=agente_prompt.PROMPT,
-    tools=[fetch_tool, extract_tool],
-)
-settings.logger.info(f"Agente '{AgenteExtratorDeConteudo_ADK.name}' carregado.")
-
-# --- Bloco de Teste ---
+# --- Bloco Principal de Execução ---
 if __name__ == '__main__':
-    settings.logger.info(f"--- Executando teste standalone para: {AgenteExtratorDeConteudo_ADK.name} ---")
+    settings.logger.info("--- Iniciando Pipeline de Extração de Conteúdo (Modo Script) ---")
     
-    async def run_standalone_test():
-        app_name = "test_app_extrator"
-        user_id = "test_user_extrator"
-        session_id = "test_session_extrator"
-        
-        session_service = InMemorySessionService() 
-        runner = Runner(agent=AgenteExtratorDeConteudo_ADK, app_name=app_name, session_service=session_service)
-        
-        await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
-        
-        prompt_text = "Execute o processo de extração de conteúdo para artigos pendentes."
-        settings.logger.info(f"Enviando prompt de teste: '{prompt_text}'")
-        message = types.Content(role='user', parts=[types.Part(text=prompt_text)])
-        
-        final_agent_response = "Nenhuma resposta final do agente foi capturada."
-        async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
-            # CORREÇÃO: Checa se event.content não é nulo antes de acessá-lo
-            if event.is_final_response() and event.content and event.content.parts:
-                final_agent_response = event.content.parts[0].text
-        
-        print("\n--- Resumo do Teste ---")
-        print(f"✅ SUCESSO: O pipeline de teste foi executado.")
-        print(f"📄 Resposta Final do Agente: {final_agent_response}")
-
+    erros = 0
+    sucessos = 0
+    
     try:
-        asyncio.run(run_standalone_test())
+        fetch_result = tool_fetch_articles_pending_extraction()
+        articles_to_process = fetch_result.get("articles_to_process", [])
+        
+        if not articles_to_process:
+            print("Nenhum artigo para processar. Encerrando.")
+        else:
+            print(f"Encontrados {len(articles_to_process)} artigos. Iniciando extração...")
+            
+            for article in articles_to_process:
+                article_id = article.get("article_id")
+                url = article.get("url")
+                if not article_id or not url: continue
+                
+                result = tool_extract_and_save_content(article_id=article_id, url=url)
+                
+                if result.get("status") in ["success", "success_skipped"]:
+                    sucessos += 1
+                else:
+                    erros += 1
+
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado: {e}", exc_info=True)
-    
-    settings.logger.info(f"--- Fim do teste standalone ---")
+        settings.logger.critical(f"❌ FALHA GERAL NO PIPELINE DE EXTRAÇÃO: {e}", exc_info=True)
+    finally:
+        print("\n--- Resumo da Execução ---")
+        print(f"✅ Pipeline de extração concluído.")
+        print(f"Artigos com Sucesso (ou pulados corretamente): {sucessos}")
+        print(f"Artigos com Falha: {erros}")
+        settings.logger.info("--- Fim do Pipeline de Extração ---")
