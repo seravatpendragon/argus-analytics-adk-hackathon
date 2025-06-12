@@ -233,3 +233,6 @@ def get_newspaper3k_config():
     config.memoize_articles = False
     config.verbose = False
     return config
+
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "argus-analytics")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") 

@@ -30,46 +30,47 @@ def tool_extract_and_save_content(article_id: int, url: str) -> dict:
 
         extractor = ContentExtractor()
         full_text = extractor.extract_text_from_url(url)
-
-        # Limpa caracteres NUL (0x00) do texto extraído.
-        if full_text is not None:
-            full_text = full_text.replace('\x00', '')
         
-        # Motivo da falha de validação, se houver
-        motivo_falha_validacao = ""
-
-        if full_text == "EXTRACAO_BLOQUEADA_POR_ROBOTS_TXT":
-            message = f"Extração para article_id {article_id} bloqueada por robots.txt."
-            article.processing_status = 'extraction_blocked'
-            status_retorno = "skipped_robots"
-        elif not full_text:
-            motivo_falha_validacao = "Texto extraído vazio ou None."
-        elif len(full_text) < 250: # Mantém o critério de tamanho mínimo para garantir algum conteúdo
-            motivo_falha_validacao = f"Texto extraído muito curto ({len(full_text)} chars)."
-        # REMOVIDO: a verificação de 'palavras_inuteis'
+        # Lista de termos que indicam uma página de CAPTCHA ou bloqueio
+        palavras_de_bloqueio = [
+            "not a robot", "unusual activity", "are you a robot", 
+            "enable javascript", "please make sure your browser supports",
+            "verificar que não é um robô"
+        ]
         
-        # Se algum motivo de falha de validação foi encontrado, entra na lógica de retry
-        if motivo_falha_validacao:
-            settings.logger.info(f"Extração para article_id {article_id} falhou validação: {motivo_falha_validacao} (Tamanho: {len(full_text) if full_text else 0} chars).")
+        # Checagem 1: É uma página de bloqueio permanente?
+        if full_text and any(palavra in full_text.lower() for palavra in palavras_de_bloqueio):
+            message = f"Extração para article_id {article_id} bloqueada por página de CAPTCHA/WAF."
+            article.processing_status = 'extraction_blocked' # Status final, não tenta de novo
+            article.article_text_content = "CONTEÚDO BLOQUEADO POR WAF/CAPTCHA" # Salva um registro claro
+            article.retries_count = MAX_EXTRACTION_RETRIES # Define para o máximo para sair da fila de retry
+            article.next_retry_at = None
+            status_retorno = "failure_blocked"
+        
+        # Checagem 2: Se não for um bloqueio, é uma falha normal (texto nulo ou curto)?
+        elif not full_text or len(full_text) < 250:
             article.retries_count = (article.retries_count or 0) + 1
             if article.retries_count < MAX_EXTRACTION_RETRIES:
                 delay = BASE_RETRY_DELAY_SECONDS * (2 ** article.retries_count)
                 article.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
-                message = f"Extração falhou para article_id {article_id} (tentativa {article.retries_count}). Próxima agendada para {article.next_retry_at.strftime('%Y-%m-%d %H:%M:%S UTC')}."
+                message = f"Extração falhou para article_id {article_id} (tentativa {article.retries_count}). Próxima agendada."
                 article.processing_status = 'pending_extraction_retry'
                 status_retorno = "partial_failure"
             else:
                 message = f"Extração falhou permanentemente para article_id {article_id} após {MAX_EXTRACTION_RETRIES} tentativas."
                 article.processing_status = 'extraction_failed'
                 status_retorno = "failure"
+        
+        # Checagem 3: Se passou por tudo, é um sucesso!
         else:
-            article.article_text_content = full_text # Aqui o texto já estará limpo e validado minimamente
-            article.processing_status = 'pending_llm_analysis' # Artigo pronto para a próxima etapa (análise do LLM)
+            article.article_text_content = full_text
+            article.processing_status = 'pending_llm_analysis'
             article.retries_count = 0
             article.next_retry_at = None
             message = f"Extração bem-sucedida para article_id {article_id}. {len(full_text)} caracteres."
             status_retorno = "success"
 
+        # O resto da função, com o commit e o return, permanece o mesmo
         article.last_processed_at = datetime.now(timezone.utc)
         db_session.commit()
         
