@@ -8,7 +8,6 @@ from typing import Optional, Dict, Any
 # --- Bloco Padrão de Configuração e Imports ---
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    # Ajuste o caminho para a raiz do projeto conforme a sua estrutura
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
@@ -18,7 +17,6 @@ except NameError:
 try:
     from config import settings
     from google.adk.agents import LlmAgent
-    # 1. TROCA DA FERRAMENTA: Importamos a ferramenta específica para Grounding no Vertex AI
     from google.adk.tools import google_search
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
@@ -32,24 +30,20 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO de importação: {e}", exc_info=True)
     sys.exit(1)
 
-# --- Definição do Agente com Grounding ---
+# --- Definições dos Agentes ---
 
-# Pegamos a configuração do nosso dicionário centralizado
+# Agente Principal (Avaliador)
 agente_config = settings.AGENT_CONFIGS.get("avaliador", {})
 MODELO_LLM_AGENTE = agente_config.get("model_name")
-
-# 2. ATIVAÇÃO DO GROUNDING: Instanciamos a VertexAiSearchTool.
-# Por padrão, ela usa a busca Google e ativa o modo de "aterramento" no modelo.
-grounding_tool = google_search
-
 AgenteAvaliadorDeFontes_ADK = LlmAgent(
     name="agente_avaliador_fontes_v2_grounded",
     model=MODELO_LLM_AGENTE,
     instruction=agent_prompt.PROMPT,
     description="Agente especialista que usa o Grounding do Vertex AI para avaliar a credibilidade.",
-    # Passamos a ferramenta de grounding para o agente
-    tools=[grounding_tool],
+    tools=[google_search],
 )
+
+# Agente Secundário (Corretor de JSON)
 JSON_REPAIR_PROMPT = """
 Sua única e exclusiva tarefa é corrigir a sintaxe do texto a seguir para que se torne um objeto JSON válido.
 Retorne APENAS o JSON corrigido. Não adicione comentários, explicações, ou a palavra "json".
@@ -57,16 +51,16 @@ Retorne APENAS o JSON corrigido. Não adicione comentários, explicações, ou a
 JSON com erro:
 {text_with_error}
 """
-
-# Usando um perfil de agente mais barato para uma tarefa simples
 corrector_config = settings.AGENT_CONFIGS.get("coletor", {}) 
 JSONCorrectorAgent = LlmAgent(
     name="json_corrector_agent",
     model=corrector_config.get("model_name"),
-    instruction=JSON_REPAIR_PROMPT,
+    # A instrução agora será formatada dinamicamente, então o padrão pode ser simples.
+    instruction="Você é um especialista em corrigir sintaxe JSON." 
 )
 
-async def analyze_one_source(main_runner: Runner, corrector_runner: Runner, source: NewsSource) -> tuple[int, Optional[Dict[str, Any]]]:
+
+async def analyze_one_source(main_runner: Runner, source: NewsSource) -> tuple[int, Optional[Dict[str, Any]]]:
     """ Função assíncrona que executa a análise e tenta corrigir falhas de JSON. """
     session_id = f"craap_session_{source.news_source_id}"
     await main_runner.session_service.create_session(
@@ -92,27 +86,36 @@ async def analyze_one_source(main_runner: Runner, corrector_runner: Runner, sour
         except json.JSONDecodeError as e:
             settings.logger.warning(f"Falha no parsing de JSON para '{source.name}'. Acionando agente corretor. Erro: {e}")
 
-            corrector_session_id = f"corrector_session_{source.news_source_id}"
+            # --- CORREÇÃO DA CORREÇÃO ---
+            corrector_instruction = JSON_REPAIR_PROMPT.format(text_with_error=final_agent_response)
             
-            # --- AQUI ESTÁ A GRANDE CORREÇÃO ---
-            # Nós colocamos o JSON quebrado no estado inicial da sessão do corretor.
-            # A chave 'text_with_error' corresponde ao placeholder {text_with_error} no prompt do corretor.
-            initial_corrector_state = {"text_with_error": final_agent_response}
-            
-            await corrector_runner.session_service.create_session(
-                app_name=corrector_runner.app_name, 
-                user_id="system_user", 
-                session_id=corrector_session_id,
-                initial_state=initial_corrector_state  # <-- Passando o estado inicial!
+            corrector_config = settings.AGENT_CONFIGS.get("coletor", {}) 
+            temp_corrector_agent = LlmAgent(
+                name="json_corrector_agent_temp",
+                model=corrector_config.get("model_name"),
+                instruction=corrector_instruction
             )
+            temp_corrector_runner = Runner(agent=temp_corrector_agent, app_name="corrector_app", session_service=InMemorySessionService())
             
-            # A mensagem agora pode ser simples, pois o contexto principal está no estado.
-            correction_message = Content(role='user', parts=[Part(text="Corrija o JSON fornecido no estado da sessão.")])
+            # 1. É necessário criar uma sessão para o runner temporário
+            corrector_session_id = f"corrector_session_{source.news_source_id}"
+            await temp_corrector_runner.session_service.create_session(
+                app_name=temp_corrector_runner.app_name, user_id="system_user", session_id=corrector_session_id
+            )
+
+            correction_message = Content(role='user', parts=[Part(text="Corrija.")])
             
             corrected_response_text = None
-            async for event in corrector_runner.run_async(user_id="system_user", session_id=corrector_session_id, new_message=correction_message):
+            
+            # 2. AQUI ESTÁ A LINHA CORRIGIDA: Passar o session_id para a chamada do run_async
+            async for event in temp_corrector_runner.run_async(
+                user_id="system_user", 
+                session_id=corrector_session_id, 
+                new_message=correction_message
+            ):
                 if event.is_final_response() and event.content and event.content.parts:
                     corrected_response_text = event.content.parts[0].text
+                    break # Apenas a resposta final é necessária
             
             if not corrected_response_text:
                 settings.logger.error(f"Agente corretor não retornou resposta para '{source.name}'.")
@@ -131,8 +134,8 @@ async def analyze_one_source(main_runner: Runner, corrector_runner: Runner, sour
     return source.news_source_id, None
 
 async def run_craap_analysis_pipeline():
-    """ Orquestra o processo, criando runners para o agente principal e o corretor. """
-    settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v3 - Auto-Corretivo) ---")
+    """ Orquestra o processo completo, de forma concorrente. """
+    settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v4 - Resiliente) ---")
     
     with get_db_session() as db_session:
         sources = get_sources_pending_craap_analysis(db_session, limit=settings.QUANTIDADE_AVALIACAO)
@@ -142,12 +145,10 @@ async def run_craap_analysis_pipeline():
 
         print(f"Encontradas {len(sources)} fontes. Criando tarefas de análise...")
         
-        # Cria um runner para cada agente
         main_runner = Runner(agent=AgenteAvaliadorDeFontes_ADK, app_name="craap_app", session_service=InMemorySessionService())
-        corrector_runner = Runner(agent=JSONCorrectorAgent, app_name="corrector_app", session_service=InMemorySessionService())
         
-        # Atualiza a criação das tarefas para passar ambos os runners
-        tasks = [analyze_one_source(main_runner, corrector_runner, source) for source in sources]
+        # Não precisamos mais do corrector_runner aqui, pois ele é criado sob demanda.
+        tasks = [analyze_one_source(main_runner, source) for source in sources]
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
@@ -176,14 +177,21 @@ async def run_craap_analysis_pipeline():
             print("\nNenhuma análise bem-sucedida para salvar.")
 
 if __name__ == '__main__':
-    # 3. GARANTIR O USO DO VERTEX AI
-    # Para este agente funcionar, o ambiente DEVE estar configurado para usar o Vertex AI.
-    # Adicione estas linhas se estiver executando este arquivo diretamente.
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
     if not os.getenv("GOOGLE_CLOUD_PROJECT"):
-        print("ERRO: A variável de ambiente GOOGLE_CLOUD_PROJECT é necessária para o Vertex AI.")
-        sys.exit(1)
-        
+        if hasattr(settings, 'PROJECT_ID') and settings.PROJECT_ID:
+            os.environ["GOOGLE_CLOUD_PROJECT"] = settings.PROJECT_ID
+        else:
+            print("ERRO: GOOGLE_CLOUD_PROJECT não definida no ambiente ou em settings.py.")
+            sys.exit(1)
+            
+    if not os.getenv("GOOGLE_CLOUD_LOCATION"):
+        if hasattr(settings, 'LOCATION') and settings.LOCATION:
+            os.environ["GOOGLE_CLOUD_LOCATION"] = settings.LOCATION
+        else:
+            print("AVISO: GOOGLE_CLOUD_LOCATION não definida. Usando 'global' como padrão.")
+            os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
+            
     try:
         asyncio.run(run_craap_analysis_pipeline())
     except Exception as e:
