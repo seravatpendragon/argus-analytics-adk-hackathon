@@ -173,6 +173,13 @@ AGENT_CONFIGS = {
             "temperature": 0.0, # Temperatura zero para máxima precisão na extração
         }
     },
+    "avaliador": {
+        "model_name": "gemini-1.5-pro-001",
+        "description": "Agentes que realizam avaliações a partir de buscas fundamentadas.",
+        "model_config": {
+            "temperature": 0.0, # Temperatura moderada para análises criativas mas focadas
+        }
+    },
     "analista": {
         "model_name": "gemini-1.5-pro-001",
         "description": "Agentes que realizam análises, raciocínios e geram textos elaborados.",

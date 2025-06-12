@@ -565,38 +565,22 @@ def update_article_with_full_text(session: Session, article_id: int, text_conten
     # A lógica principal de atualização agora está na própria ferramenta.
     pass
 
-def get_sources_pending_craap_analysis(session: Session, limit: int = 5) -> List[NewsSource]:
-    """
-    Busca fontes de notícias que estão com status 'pending_craap_analysis'.
-    """
+# Em src/database/db_utils.py
+
+def get_sources_pending_craap_analysis(session: Session, limit: int = 20) -> list[NewsSource]:
+    """ Busca fontes de notícias que ainda não foram analisadas pelo CRAAP. """
     return session.query(NewsSource)\
         .filter(NewsSource.craap_status == 'pending_craap_analysis')\
-        .order_by(NewsSource.news_source_id.asc())\
         .limit(limit)\
         .all()
 
-def update_source_craap_analysis(session: Session, source_id: int, score: float, analysis_json: dict) -> bool:
-    """
-    Atualiza uma fonte com o resultado da análise CRAAP.
-    Importante: Esta função NÃO faz o commit da transação.
-
-    Args:
-        session: A sessão do SQLAlchemy.
-        source_id: O ID da fonte a ser atualizada.
-        score: O score de credibilidade geral calculado.
-        analysis_json: O JSON completo retornado pelo agente.
-
-    Returns:
-        True se a atualização foi bem-sucedida, False caso contrário.
-    """
-    source: Optional[NewsSource] = session.query(NewsSource).filter(NewsSource.news_source_id == source_id).first()
-    
+def update_source_craap_analysis(session: Session, source_id: int, score: float, analysis_json: dict):
+    """ Atualiza uma fonte com o resultado da análise CRAAP. """
+    source = session.query(NewsSource).filter(NewsSource.news_source_id == source_id).first()
     if source:
         source.base_credibility_score = score
         source.craap_analysis_json = analysis_json
-        source.craap_status = 'analysis_complete' # Mudamos para um nome mais genérico
-        # O commit é de responsabilidade do script que chama esta função,
-        # permitindo o processamento em lote e rollback em caso de erro.
+        source.craap_status = 'craap_analysis_complete'
+        # O commit será feito pelo script que chama a função
         return True
-        
     return False

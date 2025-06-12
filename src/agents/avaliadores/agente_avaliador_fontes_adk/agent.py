@@ -5,114 +5,125 @@ import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-# --- Imports do Projeto ---
+# --- Bloco Padrão de Configuração e Imports ---
+try:
+    CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
+    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+except NameError:
+    PROJECT_ROOT = Path(os.getcwd())
+
 try:
     from config import settings
-    from google import genai
-    from google.genai.types import Tool, GoogleSearch
+    from google.adk.agents import LlmAgent
+    from google.adk.tools import google_search
+    from google.adk.runners import Runner
+    from google.adk.sessions import InMemorySessionService
+    from google.genai.types import Content, Part
     from src.database.db_utils import get_db_session, get_sources_pending_craap_analysis, update_source_craap_analysis
     from src.database.create_db_tables import NewsSource
     from . import prompt as agent_prompt
 except ImportError as e:
     import logging
-    logging.basicConfig(level=logging.CRITICAL)
-    logging.critical(f"Erro CRÍTICO de importação: {e}.")
-    sys.exit(1)
-
-logger = settings.logger
-
-# --- Interação Direta usando o padrão do Notebook ---
-
-# 1. Configura o cliente genai para usar o Vertex AI
-try:
-    # Garantimos que as configurações existem antes de tentar usá-las
-    if not settings.PROJECT_ID or not settings.LOCATION:
-        raise ValueError("As variáveis de ambiente GOOGLE_CLOUD_PROJECT e GOOGLE_CLOUD_LOCATION precisam ser definidas.")
-        
-    logger.info(f"Configurando cliente para o projeto: {settings.PROJECT_ID} na localização: {settings.LOCATION}")
-    client = genai.Client(project=settings.PROJECT_ID, location=settings.LOCATION)
-    
-    # 2. Habilita a ferramenta google_search
-    google_search_tool = Tool(google_search=GoogleSearch())
-    
-    # 3. Inicializa o modelo através do cliente
-    vertex_model = client.get_model("gemini-1.5-pro")
-
-except Exception as e:
-    logger.critical(f"Falha ao inicializar o cliente ou modelo do Google GenAI. Verifique o projeto e a autenticação. Erro: {e}")
+    _logger = logging.getLogger(__name__)
+    _logger.critical(f"Erro CRÍTICO de importação: {e}", exc_info=True)
     sys.exit(1)
 
 
-async def process_single_source(source: NewsSource) -> Optional[Dict[str, Any]]:
-    """Usa o cliente genai diretamente para analisar uma única fonte."""
+# --- Bloco de Autenticação ---
+if settings.GEMINI_API_KEY:
+    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
+else:
+    raise ValueError("GEMINI_API_KEY não encontrada!")
+
+agente_config = settings.AGENT_CONFIGS.get("avaliador", {})
+MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-pro-001")
+
+# --- Definição do Agente ---
+AgenteAvaliadorDeFontes_ADK = LlmAgent(
+    name="agente_avaliador_fontes_v1",
+    model=MODELO_LLM_AGENTE,
+    instruction=agent_prompt.PROMPT,
+    description="Agente especialista que usa google_search para avaliar a credibilidade.",
+    tools=[google_search],
+)
+
+async def analyze_one_source(runner: Runner, source: NewsSource) -> tuple[int, Optional[Dict[str, Any]]]:
+    """ Função assíncrona que executa a análise para UMA única fonte. """
+    session_id = f"craap_session_{source.news_source_id}"
+    await runner.session_service.create_session(
+        app_name=runner.app_name, user_id="system_user", session_id=session_id
+    )
     
-    logger.info(f"Iniciando análise para: {source.name} ({source.url_base})")
+    prompt_text = f"Analise o domínio: {source.url_base}"
     
+    # CORREÇÃO: Voltando para a forma padrão e correta de criar o objeto Part.
+    message = Content(role='user', parts=[Part(text=prompt_text)])
+    
+    final_agent_response = None
     try:
-        prompt_completo = (
-            f"{agent_prompt.PROMPT}\n\n"
-            f"Sua tarefa é executar essa análise para o seguinte domínio: **{source.url_base}**"
-        )
-        
-        response = await vertex_model.generate_content_async(
-            contents=prompt_completo,
-            tools=[google_search_tool]
-        )
-        
-        final_agent_response = response.text
+        async for event in runner.run_async(user_id="system_user", session_id=session_id, new_message=message):
+            if event.is_final_response() and event.content and event.content.parts:
+                final_agent_response = event.content.parts[0].text
         
         if final_agent_response:
-            json_str = final_agent_response.strip().removeprefix("```json").removesuffix("```")
-            return json.loads(json_str)
-
-    except json.JSONDecodeError:
-        logger.error(f"Não foi possível decodificar a resposta JSON do LLM para a fonte {source.name}: '{final_agent_response}'")
+            try:
+                json_str = final_agent_response.strip().removeprefix("```json").removesuffix("```")
+                return source.news_source_id, json.loads(json_str)
+            except json.JSONDecodeError as e:
+                settings.logger.error(f"Não foi possível decodificar JSON para a fonte '{source.name}': {e}")
     except Exception as e:
-        logger.error(f"Erro inesperado durante a chamada do modelo para {source.name}: {e}", exc_info=True)
-        
-    return None
+        settings.logger.error(f"Erro na execução do runner para a fonte '{source.name}': {e}", exc_info=True)
+
+    return source.news_source_id, None
 
 async def run_craap_analysis_pipeline():
-    """Orquestra o processo de ponta a ponta: buscar, analisar e salvar."""
-    logger.info("--- Iniciando Pipeline de Análise de Credibilidade de Fontes ---")
+    """ Orquestra o processo completo, agora de forma concorrente. """
+    settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v2 - Concorrente) ---")
     
     with get_db_session() as db_session:
-        sources_to_analyze = get_sources_pending_craap_analysis(db_session, limit=3)
-        
-        if not sources_to_analyze:
-            logger.info("Nenhuma fonte nova para analisar. Pipeline concluído.")
+        sources = get_sources_pending_craap_analysis(db_session, limit=20)
+        if not sources:
+            print("Nenhuma fonte nova para analisar.")
             return
 
-        logger.info(f"Encontradas {len(sources_to_analyze)} fontes para análise CRAAP.")
+        print(f"Encontradas {len(sources)} fontes. Criando tarefas de análise...")
         
-        tasks = [process_single_source(source) for source in sources_to_analyze]
+        runner = Runner(agent=AgenteAvaliadorDeFontes_ADK, app_name="craap_app", session_service=InMemorySessionService())
+        
+        # Cria uma lista de tarefas assíncronas
+        tasks = [analyze_one_source(runner, source) for source in sources]
+        
+        # Executa todas as tarefas de forma concorrente
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, result in enumerate(results):
-            source = sources_to_analyze[i]
+        
+        updates_succeeded = 0
+        for result in results:
             if isinstance(result, Exception):
-                logger.error(f"A tarefa para '{source.name}' falhou com uma exceção: {result}")
+                settings.logger.error(f"Uma tarefa de análise falhou com uma exceção: {result}")
                 continue
 
-            if result:
-                score = result.get("overall_credibility_score")
+            source_id, analysis_json = result
+            if analysis_json:
+                score = analysis_json.get("overall_credibility_score")
                 if score is not None:
-                    logger.info(f"Análise de '{source.name}' concluída. Score: {score}")
-                    update_source_craap_analysis(db_session, source.news_source_id, float(score), result)
+                    print(f"-> Análise para source_id {source_id} concluída. Score: {score}")
+                    update_source_craap_analysis(db_session, source_id, float(score), analysis_json)
+                    updates_succeeded += 1
                 else:
-                    logger.warning(f"Análise para '{source.name}' não continha 'overall_credibility_score'.")
+                    settings.logger.warning(f"Análise para source_id {source_id} não continha score.")
             else:
-                 logger.error(f"Falha ao processar a análise para '{source.name}'. Pulando.")
+                settings.logger.error(f"Análise para source_id {source_id} retornou nula.")
         
-        try:
+        if updates_succeeded > 0:
             db_session.commit()
-            logger.info("Todas as análises foram salvas no banco de dados com sucesso.")
-        except Exception as e:
-            logger.error(f"Falha ao commitar as análises no banco. Revertendo alterações. Erro: {e}", exc_info=True)
-            db_session.rollback()
-
-    logger.info("--- Fim do Pipeline de Análise de Credibilidade ---")
-
+            print(f"\n{updates_succeeded} análises salvas no banco com sucesso.")
+        else:
+            print("\nNenhuma análise bem-sucedida para salvar.")
 
 if __name__ == '__main__':
-    asyncio.run(run_craap_analysis_pipeline())
+    try:
+        asyncio.run(run_craap_analysis_pipeline())
+    except Exception as e:
+        settings.logger.critical(f"❌ FALHA GERAL NO PIPELINE: {e}", exc_info=True)
