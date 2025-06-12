@@ -18,11 +18,6 @@ try:
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
 
-# Bloco de autenticação
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em config/settings.py.")
 
 # Definições do Agente
 agente_config = settings.AGENT_CONFIGS.get("coletor", {})

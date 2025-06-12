@@ -9,8 +9,11 @@
             "module": "src.data_collection.macroeconomic.main_macro_collector",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-            "justMyCode": true // Ou false se precisar depurar bibliotecas de terceiros
+            "justMyCode": true, // Ou false se precisar depurar bibliotecas de terceiros
+            "env": {
+                "GOOGLE_GENAI_USE_VERTEXAI": "TRUE",
+                "GOOGLE_CLOUD_PROJECT": "argus-analytics"
+            }
         }
-        // ... ou aqui
     ]
 }

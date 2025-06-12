@@ -33,11 +33,6 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorRSS_ADK: {e}")
     sys.exit(1)
 
-# --- Autenticação ---
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em settings.py!")
 
 # --- Definições do Agente ---
 agente_config = settings.AGENT_CONFIGS.get("coletor", {})

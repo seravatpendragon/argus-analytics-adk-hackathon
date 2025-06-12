@@ -174,10 +174,10 @@ AGENT_CONFIGS = {
         }
     },
     "avaliador": {
-        "model_name": "gemini-1.5-pro-001",
+        "model_name": "gemini-2.5-pro-preview-06-05",
         "description": "Agentes que realizam avaliações a partir de buscas fundamentadas.",
         "model_config": {
-            "temperature": 0.0, # Temperatura moderada para análises criativas mas focadas
+            "temperature": 0.2, 
         }
     },
     "analista": {

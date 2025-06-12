@@ -47,10 +47,7 @@ except ImportError as e:
 # --- AUTENTICAÇÃO PARA A EQUIPE ---
 # O orquestrador, como ponto de entrada, é responsável por configurar o ambiente
 # para todos os sub-agentes que usam o LLM.
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em settings.py! O orquestrador não pode operar.")
+
 
 
 # --- Definição do Agente Orquestrador ---

@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any
 # --- Bloco Padrão de Configuração e Imports ---
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
+    # Ajuste o caminho para a raiz do projeto conforme a sua estrutura
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
@@ -17,6 +18,7 @@ except NameError:
 try:
     from config import settings
     from google.adk.agents import LlmAgent
+    # 1. TROCA DA FERRAMENTA: Importamos a ferramenta específica para Grounding no Vertex AI
     from google.adk.tools import google_search
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
@@ -30,57 +32,107 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO de importação: {e}", exc_info=True)
     sys.exit(1)
 
+# --- Definição do Agente com Grounding ---
 
-# --- Bloco de Autenticação ---
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada!")
-
+# Pegamos a configuração do nosso dicionário centralizado
 agente_config = settings.AGENT_CONFIGS.get("avaliador", {})
-MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-pro-001")
+MODELO_LLM_AGENTE = agente_config.get("model_name")
 
-# --- Definição do Agente ---
+# 2. ATIVAÇÃO DO GROUNDING: Instanciamos a VertexAiSearchTool.
+# Por padrão, ela usa a busca Google e ativa o modo de "aterramento" no modelo.
+grounding_tool = google_search
+
 AgenteAvaliadorDeFontes_ADK = LlmAgent(
-    name="agente_avaliador_fontes_v1",
+    name="agente_avaliador_fontes_v2_grounded",
     model=MODELO_LLM_AGENTE,
     instruction=agent_prompt.PROMPT,
-    description="Agente especialista que usa google_search para avaliar a credibilidade.",
-    tools=[google_search],
+    description="Agente especialista que usa o Grounding do Vertex AI para avaliar a credibilidade.",
+    # Passamos a ferramenta de grounding para o agente
+    tools=[grounding_tool],
+)
+JSON_REPAIR_PROMPT = """
+Sua única e exclusiva tarefa é corrigir a sintaxe do texto a seguir para que se torne um objeto JSON válido.
+Retorne APENAS o JSON corrigido. Não adicione comentários, explicações, ou a palavra "json".
+
+JSON com erro:
+{text_with_error}
+"""
+
+# Usando um perfil de agente mais barato para uma tarefa simples
+corrector_config = settings.AGENT_CONFIGS.get("coletor", {}) 
+JSONCorrectorAgent = LlmAgent(
+    name="json_corrector_agent",
+    model=corrector_config.get("model_name"),
+    instruction=JSON_REPAIR_PROMPT,
 )
 
-async def analyze_one_source(runner: Runner, source: NewsSource) -> tuple[int, Optional[Dict[str, Any]]]:
-    """ Função assíncrona que executa a análise para UMA única fonte. """
+async def analyze_one_source(main_runner: Runner, corrector_runner: Runner, source: NewsSource) -> tuple[int, Optional[Dict[str, Any]]]:
+    """ Função assíncrona que executa a análise e tenta corrigir falhas de JSON. """
     session_id = f"craap_session_{source.news_source_id}"
-    await runner.session_service.create_session(
-        app_name=runner.app_name, user_id="system_user", session_id=session_id
+    await main_runner.session_service.create_session(
+        app_name=main_runner.app_name, user_id="system_user", session_id=session_id
     )
     
     prompt_text = f"Analise o domínio: {source.url_base}"
-    
-    # CORREÇÃO: Voltando para a forma padrão e correta de criar o objeto Part.
     message = Content(role='user', parts=[Part(text=prompt_text)])
     
     final_agent_response = None
     try:
-        async for event in runner.run_async(user_id="system_user", session_id=session_id, new_message=message):
+        async for event in main_runner.run_async(user_id="system_user", session_id=session_id, new_message=message):
             if event.is_final_response() and event.content and event.content.parts:
                 final_agent_response = event.content.parts[0].text
         
-        if final_agent_response:
+        if not final_agent_response:
+            settings.logger.error(f"Agente principal não retornou resposta para '{source.name}'.")
+            return source.news_source_id, None
+
+        try:
+            json_str = final_agent_response.strip().removeprefix("```json").removesuffix("```")
+            return source.news_source_id, json.loads(json_str)
+        except json.JSONDecodeError as e:
+            settings.logger.warning(f"Falha no parsing de JSON para '{source.name}'. Acionando agente corretor. Erro: {e}")
+
+            corrector_session_id = f"corrector_session_{source.news_source_id}"
+            
+            # --- AQUI ESTÁ A GRANDE CORREÇÃO ---
+            # Nós colocamos o JSON quebrado no estado inicial da sessão do corretor.
+            # A chave 'text_with_error' corresponde ao placeholder {text_with_error} no prompt do corretor.
+            initial_corrector_state = {"text_with_error": final_agent_response}
+            
+            await corrector_runner.session_service.create_session(
+                app_name=corrector_runner.app_name, 
+                user_id="system_user", 
+                session_id=corrector_session_id,
+                initial_state=initial_corrector_state  # <-- Passando o estado inicial!
+            )
+            
+            # A mensagem agora pode ser simples, pois o contexto principal está no estado.
+            correction_message = Content(role='user', parts=[Part(text="Corrija o JSON fornecido no estado da sessão.")])
+            
+            corrected_response_text = None
+            async for event in corrector_runner.run_async(user_id="system_user", session_id=corrector_session_id, new_message=correction_message):
+                if event.is_final_response() and event.content and event.content.parts:
+                    corrected_response_text = event.content.parts[0].text
+            
+            if not corrected_response_text:
+                settings.logger.error(f"Agente corretor não retornou resposta para '{source.name}'.")
+                return source.news_source_id, None
+
             try:
-                json_str = final_agent_response.strip().removeprefix("```json").removesuffix("```")
+                json_str = corrected_response_text.strip().removeprefix("```json").removesuffix("```")
+                settings.logger.info(f"SUCESSO: JSON para '{source.name}' foi corrigido pelo agente corretor.")
                 return source.news_source_id, json.loads(json_str)
-            except json.JSONDecodeError as e:
-                settings.logger.error(f"Não foi possível decodificar JSON para a fonte '{source.name}': {e}")
+            except json.JSONDecodeError as final_e:
+                settings.logger.error(f"FALHA FINAL: Parsing do JSON falhou mesmo após correção para '{source.name}'. Erro: {final_e}")
+
     except Exception as e:
-        settings.logger.error(f"Erro na execução do runner para a fonte '{source.name}': {e}", exc_info=True)
+        settings.logger.error(f"Erro crítico na execução do runner para a fonte '{source.name}': {e}", exc_info=True)
 
     return source.news_source_id, None
 
 async def run_craap_analysis_pipeline():
-    """ Orquestra o processo completo, agora de forma concorrente. """
-    settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v2 - Concorrente) ---")
+    """ Orquestra o processo, criando runners para o agente principal e o corretor. """
+    settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v3 - Auto-Corretivo) ---")
     
     with get_db_session() as db_session:
         sources = get_sources_pending_craap_analysis(db_session, limit=settings.QUANTIDADE_AVALIACAO)
@@ -90,12 +142,13 @@ async def run_craap_analysis_pipeline():
 
         print(f"Encontradas {len(sources)} fontes. Criando tarefas de análise...")
         
-        runner = Runner(agent=AgenteAvaliadorDeFontes_ADK, app_name="craap_app", session_service=InMemorySessionService())
+        # Cria um runner para cada agente
+        main_runner = Runner(agent=AgenteAvaliadorDeFontes_ADK, app_name="craap_app", session_service=InMemorySessionService())
+        corrector_runner = Runner(agent=JSONCorrectorAgent, app_name="corrector_app", session_service=InMemorySessionService())
         
-        # Cria uma lista de tarefas assíncronas
-        tasks = [analyze_one_source(runner, source) for source in sources]
+        # Atualiza a criação das tarefas para passar ambos os runners
+        tasks = [analyze_one_source(main_runner, corrector_runner, source) for source in sources]
         
-        # Executa todas as tarefas de forma concorrente
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         updates_succeeded = 0
@@ -123,6 +176,14 @@ async def run_craap_analysis_pipeline():
             print("\nNenhuma análise bem-sucedida para salvar.")
 
 if __name__ == '__main__':
+    # 3. GARANTIR O USO DO VERTEX AI
+    # Para este agente funcionar, o ambiente DEVE estar configurado para usar o Vertex AI.
+    # Adicione estas linhas se estiver executando este arquivo diretamente.
+    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+    if not os.getenv("GOOGLE_CLOUD_PROJECT"):
+        print("ERRO: A variável de ambiente GOOGLE_CLOUD_PROJECT é necessária para o Vertex AI.")
+        sys.exit(1)
+        
     try:
         asyncio.run(run_craap_analysis_pipeline())
     except Exception as e:

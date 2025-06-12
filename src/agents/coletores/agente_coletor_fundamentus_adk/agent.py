@@ -34,10 +34,6 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorFundamentus_ADK: {e}")
     sys.exit(1)
 
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em config/settings.py. O agente não pode se autenticar.")
 # --- Definições do Agente (Padrão ADK) ---
 agente_config = settings.AGENT_CONFIGS.get("coletor", {})
 MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")

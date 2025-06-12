@@ -33,13 +33,6 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorNewsAPI_ADK: {e}")
     sys.exit(1)
 
-# --- Autenticação ---
-# CORREÇÃO DEFINITIVA: Configura a API Key como uma variável de ambiente.
-# A biblioteca do Google irá encontrá-la automaticamente.
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em settings.py. O agente não pode se autenticar.")
 
 
 # --- Definições do Agente ---

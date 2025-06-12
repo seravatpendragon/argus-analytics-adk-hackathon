@@ -17,10 +17,7 @@ try:
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
 
-if settings.GEMINI_API_KEY:
-    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
-else:
-    raise ValueError("GEMINI_API_KEY não encontrada em config/settings.py.")
+
 
 agente_config = settings.AGENT_CONFIGS.get("coletor", {})
 MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
