@@ -1,7 +1,7 @@
 from config import settings
 from src.database.db_utils import get_db_session, get_articles_pending_extraction
 
-def tool_fetch_articles_pending_extraction(limit: int = 20) -> dict:
+def tool_fetch_articles_pending_extraction(limit: int = settings.QUANTIDADE_EXTRACAO) -> dict:
     """
     Busca no banco uma lista de artigos pendentes de extração de texto.
     """

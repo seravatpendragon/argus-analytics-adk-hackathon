@@ -243,3 +243,7 @@ def get_newspaper3k_config():
 
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "argus-analytics")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") 
+
+
+QUANTIDADE_EXTRACAO = 20
+QUANTIDADE_AVALIACAO = 20

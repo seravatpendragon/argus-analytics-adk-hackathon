@@ -83,7 +83,7 @@ async def run_craap_analysis_pipeline():
     settings.logger.info("--- Iniciando Pipeline de Análise de Credibilidade (v2 - Concorrente) ---")
     
     with get_db_session() as db_session:
-        sources = get_sources_pending_craap_analysis(db_session, limit=20)
+        sources = get_sources_pending_craap_analysis(db_session, limit=settings.QUANTIDADE_AVALIACAO)
         if not sources:
             print("Nenhuma fonte nova para analisar.")
             return
