@@ -584,3 +584,33 @@ def update_source_craap_analysis(session: Session, source_id: int, score: float,
         # O commit será feito pelo script que chama a função
         return True
     return False
+
+def get_or_create_sector(session: Session, sector_name: str) -> EconomicSector:
+    """Busca ou cria um Setor Econômico e retorna o objeto."""
+    sector = session.query(EconomicSector).filter_by(name=sector_name).first()
+    if not sector:
+        sector = EconomicSector(name=sector_name)
+        session.add(sector)
+        session.flush() # Aplica a transação para obter o ID do novo setor
+        settings.logger.info(f"Criado novo Setor: '{sector_name}'")
+    return sector
+
+def get_or_create_subsector(session: Session, subsector_name: str, sector_id: int) -> Subsector:
+    """Busca ou cria um Subsetor, vinculado a um Setor, e retorna o objeto."""
+    subsector = session.query(Subsector).filter_by(name=subsector_name, economic_sector_id=sector_id).first()
+    if not subsector:
+        subsector = Subsector(name=subsector_name, economic_sector_id=sector_id)
+        session.add(subsector)
+        session.flush()
+        settings.logger.info(f"  Criado novo Subsetor: '{subsector_name}'")
+    return subsector
+
+def get_or_create_segment(session: Session, segment_name: str, subsector_id: int) -> Segment:
+    """Busca ou cria um Segmento, vinculado a um Subsetor, e retorna o objeto."""
+    segment = session.query(Segment).filter_by(name=segment_name, subsector_id=subsector_id).first()
+    if not segment:
+        segment = Segment(name=segment_name, subsector_id=subsector_id)
+        session.add(segment)
+        session.flush()
+        settings.logger.info(f"    Criado novo Segmento: '{segment_name}'")
+    return segment

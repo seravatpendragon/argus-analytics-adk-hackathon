@@ -1,3 +1,6 @@
+# /src/agents/extratores/agente_extrator_conteudo_adk/agent.py
+
+
 import os
 import sys
 from pathlib import Path

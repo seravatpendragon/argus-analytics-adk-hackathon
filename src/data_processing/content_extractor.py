@@ -17,6 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from newspaper import Article
 
 class ContentExtractor:
@@ -259,7 +260,10 @@ class ContentExtractor:
             else:
                 settings.logger.warning(f"Extração HTML com BeautifulSoup (ambos seletores) resultou em pouco texto (<250 chars) para {url}. Tamanho: {len(extracted_text)} chars.")
                 return None # Retorna None se o texto for insignificante
-                
+        except TimeoutException:
+            settings.logger.error(f"Timeout de carregamento de página excedido para '{url}' após 30 segundos.")
+            # Retorna None, pois a extração falhou devido ao timeout
+            return None
         except Exception as e:
             settings.logger.error(f"Erro Selenium para {url}: {e}")
             return None

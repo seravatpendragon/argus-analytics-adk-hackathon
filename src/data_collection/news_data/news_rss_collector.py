@@ -17,6 +17,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import TimeoutException
+
 
 # --- Bloco Padrão de Configuração e Imports ---
 try:
@@ -41,37 +43,41 @@ except ImportError as e:
 
 
 class RSSCollector:
-    """ Coletor de RSS com resolução avançada e hierárquica de links. """
+    """ Coletor de RSS com resolução de links de nível industrial e tratamento de timeout. """
 
     def __init__(self, db_session: Session, credibility_data: dict):
         self.db_session = db_session
         self.credibility_data = credibility_data
         self.request_headers = {'User-Agent': random.choice(settings.USER_AGENTS)}
-        self.driver = self._start_driver() # Inicia o driver do Selenium uma vez
+        self.driver = self._start_driver()
 
     def _start_driver(self):
+        """ Configura e inicia a instância do navegador Selenium. """
         try:
             options = Options()
             options.add_argument("--headless=new")
             options.add_argument(f"user-agent={self.request_headers['User-Agent']}")
             options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
             service = Service(ChromeDriverManager().install())
             driver = webdriver.Chrome(service=service, options=options)
-            driver.implicitly_wait(5)
+            # Define um timeout MÁXIMO para o carregamento de qualquer página
+            driver.set_page_load_timeout(25) 
             return driver
         except Exception as e:
             settings.logger.error(f"Falha ao iniciar o driver do Selenium: {e}")
             return None
 
     def _clean_google_alert_url(self, raw_url: str) -> str:
-        """ Extrai a URL real de um link do Google Alerts. """
+        """ Extrai a URL real de um link de Alerta do Google. """
         try:
             return parse_qs(urlparse(raw_url).query).get('url', [raw_url])[0]
         except (KeyError, IndexError):
             return raw_url
 
     def _resolve_redirect_with_requests(self, url: str) -> str:
-        """ Tenta resolver redirects simples com requests.head (rápido). """
+        """ Tenta resolver redirects simples com requests.head. """
         try:
             response = requests.head(url, allow_redirects=True, timeout=10, headers=self.request_headers)
             return response.url
@@ -79,14 +85,18 @@ class RSSCollector:
             return url
 
     def _resolve_redirect_with_selenium(self, url: str) -> str:
-        """ Usa um navegador real para redirects complexos (lento, mas robusto). """
+        """ Usa o navegador para resolver redirects complexos. """
         if not self.driver:
-            settings.logger.error("Driver do Selenium não disponível, não é possível resolver o link.")
             return url
         try:
             self.driver.get(url)
-            time.sleep(2) # Espera JS
+            # A espera implícita ou explícita (WebDriverWait) pode ser usada aqui se necessário,
+            # mas o driver.current_url após o .get() com o timeout já é muito eficaz.
             return self.driver.current_url
+        # CORREÇÃO: Capturando o TimeoutException especificamente
+        except TimeoutException:
+            settings.logger.error(f"Timeout de carregamento de página com Selenium para '{url}'.")
+            return url # Retorna a URL original se estourar o tempo
         except Exception as e:
             settings.logger.error(f"Erro no Selenium para '{url}': {e}")
             return url
@@ -98,16 +108,13 @@ class RSSCollector:
         final_link = raw_link
         parsed_url = urlparse(raw_link)
         
-        try:
-            if "google.com/url?" in raw_link:
-                final_link = self._clean_google_alert_url(raw_link)
-            elif "news.google.com" in parsed_url.netloc:
-                final_link = self._resolve_redirect_with_selenium(raw_link)
-            elif any(domain in parsed_url.netloc for domain in ["t.co", "bit.ly"]): # Outros encurtadores
-                final_link = self._resolve_redirect_with_requests(raw_link)
-        except Exception as e:
-            settings.logger.error(f"Erro inesperado ao resolver link '{raw_link}': {e}", exc_info=True)
-            final_link = raw_link
+        # Sua lógica de despachante está perfeita
+        if "google.com/url?" in raw_link:
+            final_link = self._clean_google_alert_url(raw_link)
+        elif "news.google.com" in parsed_url.netloc:
+            final_link = self._resolve_redirect_with_selenium(raw_link)
+        elif any(domain in parsed_url.netloc for domain in ["t.co", "bit.ly"]):
+            final_link = self._resolve_redirect_with_requests(raw_link)
 
         was_redirected = final_link != raw_link
         if was_redirected:
@@ -183,6 +190,6 @@ class RSSCollector:
         return prepared_data_with_context
     
     def close(self):
-        """ Fecha o navegador Selenium. """
+        """ Fecha o navegador Selenium quando o trabalho termina. """
         if self.driver:
             self.driver.quit()

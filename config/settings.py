@@ -239,7 +239,6 @@ def get_newspaper3k_config():
     # A CADA CHAMADA, UM NOVO USER-AGENT É ESCOLHIDO ALEATORIAMENTE
     config.browser_user_agent = random.choice(USER_AGENTS)
     config.request_timeout = 20
-    config.respect_robots = True
     config.fetch_images = False
     config.memoize_articles = False
     config.verbose = False
