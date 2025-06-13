@@ -155,10 +155,14 @@ else:
 # Loga outros caminhos e níveis de logging.
 logger.info(f"Diretório base do projeto: {BASE_DIR}")
 logger.info(f"Logging configurado para nível: {LOGGING_LEVEL_STR}, arquivo: {LOG_FILE}")
-logger.info(f"GEMINI_API_KEY carregada com sucesso (não exibida por segurança).")
-
 #modelos llm
 AGENT_CONFIGS = {
+    "orquestrador": {
+        "model_name": "gemini-2.5-pro-preview-06-05", 
+        "model_config": {
+            "temperature": 0.1, # Baixa temperatura para previsibilidade
+        }
+    },
     "coletor": {
         "model_name": "gemini-2.0-flash-lite-001",
         "description": "Agentes para tarefas de coleta de dados simples e chamadas de ferramenta diretas.",

@@ -3,29 +3,28 @@
 import os
 import sys
 from pathlib import Path
-import json
 import asyncio
 
 # --- Configuração de Caminhos e Imports ---
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
+    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from config import settings
-    from google.adk.agents import Agent
-    from google.adk.tools import FunctionTool
+    # Importando as classes corretas do ADK
+    from google.adk.agents import BaseAgent
+    from google.adk.events import Event
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
-    from google.genai import types
+    from google.genai.types import Content, Part
+    
+    # Importando a função da ferramenta diretamente
     from .tools.tool_collect_newsapi_articles import tool_collect_newsapi_articles
-    from . import prompt as agente_prompt
 except ImportError as e:
     import logging
     logging.basicConfig(level=logging.INFO)
@@ -34,55 +33,71 @@ except ImportError as e:
     sys.exit(1)
 
 
+# --- Definição do Agente com BaseAgent ---
+class AgenteColetorNewsAPI(BaseAgent):
+    """
+    Um agente procedural que encapsula a lógica de coleta de notícias da NewsAPI.
+    """
+    def __init__(self, name: str = "agente_coletor_newsapi", description: str = "Agente para buscar notícias de uma ampla gama de fontes de mídia globais através da NewsAPI."):
+        super().__init__(name=name, description=description)
 
-# --- Definições do Agente ---
-agente_config = settings.AGENT_CONFIGS.get("coletor", {})
-MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
-collect_newsapi_tool_adk_instance = FunctionTool(func=tool_collect_newsapi_articles)
+    async def _run_async_impl(self, context):
+        """
+        Executa a lógica procedural de coleta da NewsAPI.
+        """
+        settings.logger.info(f"Agente {self.name} iniciado.")
+        yield Event(
+            author=self.name,
+            content=Content(parts=[Part(text="Iniciando coleta de notícias da NewsAPI...")])
+        )
 
-# CORREÇÃO: O construtor do Agent volta a ser limpo, sem o parâmetro api_key.
-AgenteColetorNewsAPI_ADK = Agent(
-    name="agente_coletor_newsapi_adk_v1",
-    model=MODELO_LLM_AGENTE,
-    description="Agente responsável por coletar artigos de notícias da NewsAPI com base nas configurações em newsapi_news_config.json.",
-    instruction=agente_prompt.PROMPT,
-    tools=[
-        collect_newsapi_tool_adk_instance,
-    ],
-)
+        try:
+            result = tool_collect_newsapi_articles()
+            
+            if isinstance(result, dict) and 'message' in result:
+                message = result.get('message')
+            else:
+                message = str(result)
 
-settings.logger.info(f"Agente '{AgenteColetorNewsAPI_ADK.name}' carregado com o modelo '{MODELO_LLM_AGENTE}'.")
+            settings.logger.info(message)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=message)])
+            )
 
-# --- Bloco de Teste Standalone (Correto) ---
+        except Exception as e:
+            error_message = f"FALHA GERAL no {self.name}: {e}"
+            settings.logger.critical(error_message, exc_info=True)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=error_message)])
+            )
+
+# Instancia o agente
+AgenteColetorNewsAPI_ADK = AgenteColetorNewsAPI()
+
+# --- Bloco de Teste ---
 if __name__ == '__main__':
     settings.logger.info(f"--- Executando teste standalone para: {AgenteColetorNewsAPI_ADK.name} ---")
 
-    async def run_standalone_test():
-        app_name = "test_app_newsapi"
-        user_id = "test_user"
-        session_id = "test_session_newsapi"
+    async def run_test():
+        runner = Runner(agent=AgenteColetorNewsAPI_ADK, app_name="test_app_newsapi", session_service=InMemorySessionService())
+        user_id, session_id = "test_user_newsapi", "test_session_newsapi"
         
-        session_service = InMemorySessionService()
-        runner = Runner(agent=AgenteColetorNewsAPI_ADK, app_name=app_name, session_service=session_service)
-        await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+        await runner.session_service.create_session(
+            app_name=runner.app_name, user_id=user_id, session_id=session_id
+        )
         
-        prompt_text = "Inicie a coleta de notícias da NewsAPI."
-        settings.logger.info(f"Enviando prompt de teste: '{prompt_text}'")
-        message = types.Content(role='user', parts=[types.Part(text=prompt_text)])
+        message = Content(role='user', parts=[Part(text="Execute a coleta da NewsAPI.")])
         
-        final_agent_response = ""
+        print(f"\n--- ACIONANDO O AGENTE: '{AgenteColetorNewsAPI_ADK.name}' ---")
         async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
-            if event.is_final_response():
-                final_agent_response = event.content.parts[0].text
-
-        print("\n--- Resumo do Teste ---")
-        print(f"✅ SUCESSO: O pipeline de teste foi executado sem erros de programação.")
-        print(f"📄 Resposta Final do Agente: {final_agent_response}")
-
+            if event.author == AgenteColetorNewsAPI_ADK.name and event.content:
+                print(f"[{event.author}]: {event.content.parts[0].text}")
 
     try:
-        asyncio.run(run_standalone_test())
+        asyncio.run(run_test())
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado durante a execução do teste: {e}", exc_info=True)
+        settings.logger.critical(f"FALHA NO TESTE: {e}", exc_info=True)
 
     settings.logger.info(f"--- Fim do teste standalone ---")

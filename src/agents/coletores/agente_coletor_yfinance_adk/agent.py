@@ -1,9 +1,6 @@
-# src/agents/agente_coletor_yfinance_adk/agent.py
-
 import os
 import sys
 from pathlib import Path
-import json
 import asyncio
 
 # --- Configuração de Caminhos e Imports ---
@@ -14,18 +11,18 @@ try:
         sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from config import settings
-    from google.adk.agents import Agent
-    from google.adk.tools import FunctionTool
+    # 1. Importando as classes corretas do ADK
+    from google.adk.agents import BaseAgent
+    from google.adk.events import Event
     from google.adk.runners import Runner
     from google.adk.sessions import InMemorySessionService
-    from google.genai import types
+    from google.genai.types import Content, Part
+    
+    # 2. Importando a função da ferramenta diretamente
     from .tools.tool_collect_yfinance import collect_and_store_yfinance_indicators
-    from . import prompt as agente_prompt
 except ImportError as e:
     import logging
     logging.basicConfig(level=logging.INFO)
@@ -33,60 +30,74 @@ except ImportError as e:
     _logger.critical(f"Erro CRÍTICO ao importar módulos para AgenteColetorYfinance_ADK: {e}")
     sys.exit(1)
 
-# --- Autenticação ---
-# CORREÇÃO DEFINITIVA: Configura a API Key como uma variável de ambiente.
-# A biblioteca do Google irá encontrá-la automaticamente.
+# --- Definição do Agente com BaseAgent ---
+class AgenteColetorYfinance(BaseAgent):
+    """
+    Um agente procedural que encapsula a lógica de coleta de dados do Yahoo Finance.
+    """
+    def __init__(self, name: str = "agente_coletor_yfinance", description: str = "Agente especialista para buscar dados de mercado de ações e informações financeiras de empresas do Yahoo Finance."):
+        super().__init__(name=name, description=description)
 
+    # 3. CORREÇÃO: O método de execução se chama '_run_async_impl'
+    async def _run_async_impl(self, context):
+        """
+        Executa a lógica procedural de coleta.
+        """
+        settings.logger.info(f"Agente {self.name} iniciado.")
+        yield Event(
+            author=self.name,
+            content=Content(parts=[Part(text="Iniciando coleta de dados do Yahoo Finance...")])
+        )
 
+        try:
+            # Chama a função Python diretamente
+            result = collect_and_store_yfinance_indicators()
+            
+            # Trata a resposta, que pode ser um dicionário ou string
+            if isinstance(result, dict) and 'message' in result:
+                message = result.get('message')
+            else:
+                message = str(result)
 
-# --- Definições do Agente ---
-agente_config = settings.AGENT_CONFIGS.get("coletor", {})
-MODELO_LLM_AGENTE = agente_config.get("model_name", "gemini-1.5-flash-001")
-collect_yfinace_tool_adk_instance = FunctionTool(func=collect_and_store_yfinance_indicators)
+            settings.logger.info(message)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=message)])
+            )
 
-# CORREÇÃO: O construtor do Agent volta a ser limpo, sem o parâmetro api_key.
-AgenteColetorYfinance_ADK = Agent(
-    name="agente_coletor_yfinance_adk_v1",
-    model=MODELO_LLM_AGENTE,
-    description="Agente responsável por coletar indicadores do Yahoo Finance com base nas configurações em yfinance_indicators_config.json.",
-    instruction=agente_prompt.PROMPT,
-    tools=[
-        collect_yfinace_tool_adk_instance,
-    ],
-)
+        except Exception as e:
+            error_message = f"FALHA GERAL no {self.name}: {e}"
+            settings.logger.critical(error_message, exc_info=True)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=error_message)])
+            )
 
-settings.logger.info(f"Agente '{AgenteColetorYfinance_ADK.name}' carregado com o modelo '{MODELO_LLM_AGENTE}'.")
+# Instancia o agente para ser importado por outros módulos
+AgenteColetorYfinance_ADK = AgenteColetorYfinance()
 
-# --- Bloco de Teste Standalone (Correto) ---
+# --- Bloco de Teste ---
 if __name__ == '__main__':
     settings.logger.info(f"--- Executando teste standalone para: {AgenteColetorYfinance_ADK.name} ---")
 
-    async def run_standalone_test():
-        app_name = "test_app_yfinance"
-        user_id = "test_user"
-        session_id = "test_session_yfinance"
+    async def run_test():
+        runner = Runner(agent=AgenteColetorYfinance_ADK, app_name="test_app_yfinance", session_service=InMemorySessionService())
+        user_id, session_id = "test_user_yfin", "test_session_yfin"
         
-        session_service = InMemorySessionService()
-        runner = Runner(agent=AgenteColetorYfinance_ADK, app_name=app_name, session_service=session_service)
-        await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+        await runner.session_service.create_session(
+            app_name=runner.app_name, user_id=user_id, session_id=session_id
+        )
         
-        prompt_text = "Inicie a coleta de dados de mercado do Yfinance."
-        settings.logger.info(f"Enviando prompt de teste: '{prompt_text}'")
-        message = types.Content(role='user', parts=[types.Part(text=prompt_text)])
+        message = Content(role='user', parts=[Part(text="Execute a coleta do YFinance.")])
         
-        final_agent_response = ""
+        print(f"\n--- ACIONANDO O AGENTE: '{AgenteColetorYfinance_ADK.name}' ---")
         async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
-            if event.is_final_response():
-                final_agent_response = event.content.parts[0].text
-
-        print("\n--- Resumo do Teste ---")
-        print(f"✅ SUCESSO: O pipeline de teste foi executado sem erros de programação.")
-        print(f"📄 Resposta Final do Agente: {final_agent_response}")
-
+            if event.author == AgenteColetorYfinance_ADK.name and event.content:
+                print(f"[{event.author}]: {event.content.parts[0].text}")
 
     try:
-        asyncio.run(run_standalone_test())
+        asyncio.run(run_test())
     except Exception as e:
-        settings.logger.critical(f"❌ FALHA: Ocorreu um erro inesperado durante a execução do teste: {e}", exc_info=True)
+        settings.logger.critical(f"FALHA NO TESTE: {e}", exc_info=True)
 
     settings.logger.info(f"--- Fim do teste standalone ---")
