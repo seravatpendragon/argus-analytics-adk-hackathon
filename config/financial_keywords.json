@@ -1,0 +1,73 @@
+{
+  "Macro & Política": [
+    "fomc", "fed", "minutos fomc", "taper", "aperto quantitativo", "controle curva juros",
+    "balanço fed", "bacen", "bcb", "banco central europeu", "boe", "boj", "política monetária",
+    "taxa básica", "ipca", "igpm", "inpc", "inflação subjacente", "hiato do produto", "capacidade ociosa",
+    "resultado primário", "dívida bruta", "dívida líquida", "teto de gastos", "arcabouço fiscal",
+    "risco país", "cds", "swap de inadimplência", "pib global", "onshoring", "nearshoring",
+    "desglobalização", "ubs", "credit suisse", "silicon valley bank", "svb"
+  ],
+  "Renda Variável & Corporate Actions": [
+    "b3", "bolsa brasileira", "lote padrão", "lote fracionário", "blue chips", "small caps",
+    "fii", "fiis", "fundos imobiliários", "bdr", "reits", "day trade", "swing trade", "home broker",
+    "analise técnica", "candle", "rompimento de resistência", "volume financeiro", "liquidez",
+    "ibov", "ibovespa", "ifix", "idiv", "ivbx", "smll", "mlcx", "setoriais", "resultados", "guidance",
+    "proventos", "dividendos", "dy", "dividend yield", "payout", "tag along", "governança corporativa",
+    "desdobramento", "recompra de ações", "bonificação", "cisão", "reestruturação"
+  ],
+  "Renda Fixa": [
+    "cdi", "cdb", "lci", "lca", "lc", "debêntures", "cri", "cra", "crash", "recebíveis",
+    "duration", "convexidade", "curva de juros", "curva invertida", "spread de crédito",
+    "rating", "grau de investimento", "grau especulativo", "subprime", "risco crédito"
+  ],
+  "Derivativos": [
+    "contrato futuro", "dólar futuro", "índice futuro", "mini contrato", "opções", "opção", "call",
+    "put", "strike", "vencimento", "derivativos commodities", "boi gordo", "soja", "milho", "café",
+    "ouro", "petróleo brent", "wti", "hedge", "alavancagem", "margem garantia", "ajuste diário"
+  ],
+  "Bancário & Fintechs": [
+    "spread bancário", "selic over", "rotativo cartão", "taxa efetiva anual", "custo efetivo total",
+    "liberdade financeira", "educação financeira", "reserva emergência", "aporte mínimo",
+    "carteira recomendada", "alocação ativos", "rebalanceamento", "vantagem competitiva",
+    "open banking", "pix", "fintechs", "neobancos", "moeda digital bc", "real digital"
+  ],
+  "Globais & Cripto": [
+    "libor", "sofr", "eurodólar", "dxy", "dólar index", "yuan offshore", "bitcoin", "ethereum",
+    "stablecoins", "criptomoedas", "finanças descentralizadas", "staking", "halving", "nft", "tokenização", "web3",
+    "commodities", "vix", "índice medo", "risk on", "risk off"
+  ],
+  "Análise Fundamentalista": [
+    "valuation", "fluxo caixa descontado", "múltiplos", "p/l", "p/vp", "ev/ebitda",
+    "roe", "roic", "margem ebit", "margem líquida", "alavancagem", "cagr",
+    "beta", "índice sharpe", "índice sortino", "value investing", "growth investing", "garp"
+  ],
+  "Corporate Finance": [
+    "oferta pública inicial", "follow-on", "oferta secundária", "m&a", "fusões aquisições", "due diligence",
+    "reorganização societária", "spin-off", "estrutura capital", "custo médio ponderado", "custo capital",
+    "private equity", "venture capital", "m&a fronteiras"
+  ],
+  "ESG & Sustentabilidade": [
+    "esg", "zero líquido", "transição energética", "crédito carbono", "títulos verdes",
+    "taxonomia verde", "ibov esg", "sustentabilidade corporativa", "investimento impacto"
+  ],
+  "Riscos e Regulação": [
+    "conformidade", "lgpd", "compliance", "segurança cibernética", "gestão crise",
+    "gestão riscos", "resolução bacen", "cnsp", "risco operacional", "basileia"
+  ],
+  "Petróleo, Gás e Biocombustíveis": [
+    "exploração", "perfuração", "reservas", "upstream", "midstream", "downstream",
+    "refino", "refinaria", "oleoduto", "gasoduto", "petroquímica", "petróleo bruto",
+    "brent", "wti", "óleo combustível", "gasolina", "diesel", "etanol", "biodiesel",
+    "biocombustíveis", "pré-sal", "produção exploração", "offshore", "onshore",
+    "gnl", "gás natural", "opep", "eia", "agência nacional petróleo",
+    "leilões blocos", "royalties", "participações especiais", "partilha produção",
+    "petrobras", "biogás", "bioquerosene", "etanol celulose"
+  ],
+  "Termos Gerais Essenciais": [
+    "selic", "pib", "crédito", "dívida", "orçamento", "fiscal", "banco central", "copom",
+    "tesouro direto", "bolsa valores", "câmbio", "inflação", "mercado", "juros", "investimento",
+    "ação", "ações", "economia", "financeiro", "dólar"
+  ],"Tickers": [
+    "PETR4"
+  ]
+}

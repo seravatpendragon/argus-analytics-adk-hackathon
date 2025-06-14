@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 import logging
 from pathlib import Path 
 from newspaper import Config as NewspaperConfig
+import nltk
+from config import settings
 
 
 # --- Carrega as variáveis do arquivo .env para o ambiente ---
@@ -250,3 +252,27 @@ LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 QUANTIDADE_EXTRACAO = 20
 QUANTIDADE_AVALIACAO = 100
+
+
+def setup_nltk_resources():
+    """
+    Verifica e baixa os recursos necessários do NLTK de forma idempotente.
+    """
+    # Usando seu dicionário que estava mais completo e correto!
+    resources = {
+        "punkt": "tokenizers/punkt",
+        "stopwords": "corpus/stopwords",
+        "rslp": "stemmers/rslp"
+    }
+    for resource_name, resource_path in resources.items():
+        try:
+            # A verificação correta, usando o caminho completo
+            nltk.data.find(resource_path)
+            settings.logger.info(f"Recurso NLTK '{resource_name}' já existe.")
+        except LookupError:
+            settings.logger.info(f"Recurso NLTK '{resource_name}' não encontrado. Baixando agora...")
+            nltk.download(resource_name, quiet=True)
+            settings.logger.info(f"Recurso '{resource_name}' baixado com sucesso.")
+
+# Executa a inicialização UMA VEZ, no local correto, quando o módulo é carregado.
+setup_nltk_resources()
