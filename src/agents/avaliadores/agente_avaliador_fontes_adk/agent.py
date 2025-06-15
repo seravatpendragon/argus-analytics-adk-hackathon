@@ -33,11 +33,11 @@ except ImportError as e:
 # --- Definições dos Agentes ---
 
 # Agente Principal (Avaliador)
-agente_config = settings.AGENT_CONFIGS.get("avaliador", {})
-MODELO_LLM_AGENTE = agente_config.get("model_name")
+profile = settings.AGENT_PROFILES.get("avaliador")
 AgenteAvaliadorDeFontes_ADK = LlmAgent(
-    name="agente_avaliador_fontes_v2_grounded",
-    model=MODELO_LLM_AGENTE,
+    name="agente_avaliador_fontes",
+    model=profile.get("model_name"),
+    generate_content_config=profile.get("generate_content_config"),
     instruction=agent_prompt.PROMPT,
     description="Agente especialista que usa o Grounding do Vertex AI para avaliar a credibilidade.",
     tools=[google_search],

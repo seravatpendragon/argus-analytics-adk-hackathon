@@ -36,10 +36,9 @@ class AgenteExtratorConteudo(BaseAgent):
 
     async def _run_async_impl(self, context):
         """
-        Executa a lógica procedural de busca e extração.
+        Executa a lógica procedural de busca e extração com um timeout geral por artigo.
         """
         settings.logger.info(f"Agente {self.name} iniciado.")
-        # CORREÇÃO: Construindo o objeto Event manualmente
         yield Event(
             author=self.name,
             content=Content(parts=[Part(text="Iniciando pipeline de extração de conteúdo...")])
@@ -57,35 +56,62 @@ class AgenteExtratorConteudo(BaseAgent):
                     author=self.name,
                     content=Content(parts=[Part(text="Nenhum artigo novo para processar.")])
                 )
-            else:
-                msg = f"Encontrados {len(articles_to_process)} artigos. Iniciando extração em lote..."
-                settings.logger.info(msg)
-                yield Event(
-                    author=self.name,
-                    content=Content(parts=[Part(text=msg)])
-                )
+                return # Encerra a execução se não houver trabalho
+
+            msg = f"Encontrados {len(articles_to_process)} artigos. Iniciando extração em lote..."
+            settings.logger.info(msg)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=msg)])
+            )
+            
+            # Pega o loop de eventos do asyncio para usar no executor
+            loop = asyncio.get_running_loop()
+
+            for article in articles_to_process:
+                article_id = article.get("article_id")
+                url = article.get("url")
+                if not article_id or not url:
+                    continue
                 
-                for article in articles_to_process:
-                    article_id = article.get("article_id")
-                    url = article.get("url")
-                    if not article_id or not url: continue
+                try:
+                    # --- AQUI ESTÁ A LÓGICA DE TIMEOUT APLICADA A CADA ARTIGO ---
+                    settings.logger.info(f"Agendando extração para article_id {article_id} com timeout de 90s.")
                     
-                    result = tool_extract_and_save_content(article_id=article_id, url=url)
+                    # Executa a função síncrona em uma thread separada com um timeout geral.
+                    result = await asyncio.wait_for(
+                        loop.run_in_executor(
+                            None,  # Usa o executor de thread padrão
+                            tool_extract_and_save_content,  # A função síncrona a ser executada
+                            article_id,  # Primeiro argumento para a função
+                            url          # Segundo argumento para a função
+                        ), 
+                        timeout=90.0  # Timeout geral de 90 segundos
+                    )
                     
                     if result.get("status") in ["success", "success_skipped"]:
                         sucessos += 1
                     else:
+                        settings.logger.warning(f"Extração para article_id {article_id} retornou status de falha: {result.get('status')}")
                         erros += 1
-                
-                final_summary = f"Processo de extração concluído. Sucessos: {sucessos}, Falhas: {erros}."
-                settings.logger.info(final_summary)
-                yield Event(
-                    author=self.name,
-                    content=Content(parts=[Part(text=final_summary)])
-                )
+
+                except asyncio.TimeoutError:
+                    settings.logger.error(f"TIMEOUT GERAL: A extração para o artigo {article_id} excedeu 90 segundos e foi cancelada.")
+                    erros += 1 # Conta como um erro para o resumo final
+                except Exception as e:
+                    settings.logger.error(f"Erro inesperado no loop de extração para o artigo {article_id}: {e}", exc_info=True)
+                    erros += 1
+            
+            # Mensagem final após o loop
+            final_summary = f"Processo de extração em lote concluído. Sucessos: {sucessos}, Falhas: {erros}."
+            settings.logger.info(final_summary)
+            yield Event(
+                author=self.name,
+                content=Content(parts=[Part(text=final_summary)])
+            )
 
         except Exception as e:
-            error_message = f"FALHA GERAL NO PIPELINE DE EXTRAÇÃO: {e}"
+            error_message = f"FALHA CRÍTICA NO PIPELINE DE EXTRAÇÃO: {e}"
             settings.logger.critical(error_message, exc_info=True)
             yield Event(
                 author=self.name,

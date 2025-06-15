@@ -15,6 +15,9 @@ from pathlib import Path
 from newspaper import Config as NewspaperConfig
 import nltk
 from config import settings
+from google.genai.types import GenerationConfig, SafetySetting, ThinkingConfig, GenerateContentConfig
+from google.adk.planners.built_in_planner import BuiltInPlanner
+
 
 
 # --- Carrega as variáveis do arquivo .env para o ambiente ---
@@ -158,54 +161,53 @@ else:
 logger.info(f"Diretório base do projeto: {BASE_DIR}")
 logger.info(f"Logging configurado para nível: {LOGGING_LEVEL_STR}, arquivo: {LOG_FILE}")
 #modelos llm
-AGENT_CONFIGS = {
+
+SAFETY_SETTINGS = [
+    SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_ONLY_HIGH"),
+    SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_ONLY_HIGH"),
+    SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_ONLY_HIGH"),
+    SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_ONLY_HIGH"),
+]
+
+AGENT_PROFILES = {
+    # Perfil para agentes que orquestram e usam ferramentas. A temperatura baixa garante previsibilidade.
     "orquestrador": {
-        "model_name": "gemini-2.5-pro-preview-06-05", 
-        "model_config": {
-            "temperature": 0.1, # Baixa temperatura para previsibilidade
-        }
+        "model_name": "gemini-2.5-flash-preview-05-20",
+        "generate_content_config": GenerateContentConfig(
+            temperature=0.1,
+            safety_settings=SAFETY_SETTINGS
+        )
     },
-    "coletor": {
-        "model_name": "gemini-2.0-flash-lite-001",
-        "description": "Agentes para tarefas de coleta de dados simples e chamadas de ferramenta diretas.",
-        "model_config": {
-            "temperature": 0.1, # Baixa temperatura para previsibilidade
-        }
+    
+    # Perfil para agentes de análise que precisam de máxima qualidade e nuance.
+    "analista_profundo": {
+        "model_name": "gemini-2.5-flash-preview-05-20",
+        "generate_content_config": GenerateContentConfig(
+            temperature=0.5,
+            safety_settings=SAFETY_SETTINGS
+        ),
+        "planner": BuiltInPlanner(
+            thinking_config=ThinkingConfig(thinking_budget=-1)
+        )
     },
-    "extrator": {
-        "model_name": "gemini-2.0-flash-lite-001",
-        "description": "Agentes focados em extrair informação estruturada de textos não estruturados.",
-        "model_config": {
-            "temperature": 0.0, # Temperatura zero para máxima precisão na extração
-        }
+    
+    # Perfil para agentes de análise factual e rápida (Resumo, Entidades).
+    "analista_rapido": {
+        "model_name": "gemini-2.5-flash-preview-05-20",
+        "generate_content_config": GenerateContentConfig(
+            temperature=0.2,
+            safety_settings=SAFETY_SETTINGS
+        ),
+        "planner": BuiltInPlanner(
+            thinking_config=ThinkingConfig(thinking_budget=0)
+        )
+        
     },
-    "avaliador": {
-        "model_name": "gemini-2.5-pro-preview-06-05",
-        "description": "Agentes que realizam avaliações a partir de buscas fundamentadas.",
-        "model_config": {
-            "temperature": 0.2, 
-        }
-    },
-    "analista": {
-        "model_name": "gemini-1.5-pro-001",
-        "description": "Agentes que realizam análises, raciocínios e geram textos elaborados.",
-        "model_config": {
-            "temperature": 0.5, # Temperatura moderada para análises criativas mas focadas
-        }
-    },
-    "insight": {
-        "model_name": "gemini-1.5-pro-001",
-        "description": "Agentes de alto nível que buscam correlações e geram insights novos.",
-        "model_config": {
-            "temperature": 0.8, # Temperatura alta para máxima "criatividade" e geração de hipóteses
-        }
-    },
-    "moderador": {
-        "model_name": "gemini-1.5-flash-001",
-        "description": "Agentes que atuam como revisores ou mediadores em um fluxo.",
-        "model_config": {
-            "temperature": 0.3,
-        }
+
+    # Perfil específico para o Avaliador CRAAP com Grounding.
+    "avaliador_craap": {
+        "model_name": "gemini-2.5-pro-preview-05-06",
+        "generate_content_config": GenerateContentConfig(temperature=0.2)
     }
 }
 
@@ -250,7 +252,7 @@ PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "argus-analytics")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") 
 
 
-QUANTIDADE_EXTRACAO = 20
+QUANTIDADE_EXTRACAO = 200
 QUANTIDADE_AVALIACAO = 100
 
 

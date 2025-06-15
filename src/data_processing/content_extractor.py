@@ -17,38 +17,37 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from newspaper import Article
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from newspaper import Article, Config as NewspaperConfig
 
-class ContentExtractor:
+
+
+class ArgusContentExtractor:
     """
     Orquestra a extração de conteúdo, usando o método certo para cada domínio e formato.
     """
 
     def __init__(self):
-        self.driver_path = ChromeDriverManager().install()
-        self.newspaper_config = {
-            'browser_user_agent': random.choice(settings.USER_AGENTS),
-            'request_timeout': 10,
-            'follow_meta_refresh': True
-        }
-        self.request_headers = {'User-Agent': random.choice(settings.USER_AGENTS)}
+        self.logger = settings.logger
+        self.newspaper_config = NewspaperConfig()
+        self.newspaper_config.request_timeout = 20
+        self.newspaper_config.keep_article_html = True
+        try:
+            self.driver_path = ChromeDriverManager().install()
+        except Exception as e:
+            self.logger.error(f"Não foi possível baixar/encontrar o chromedriver: {e}", exc_info=True)
+            self.driver_path = None
 
-    def _setup_chrome_options(self, user_agent: str = None):
-        """
-        Configura e retorna um NOVO objeto Options do Chrome.
-        Permite adicionar um user_agent específico.
-        """
+
+    def _setup_chrome_options(self) -> Options:
+        """Configura e retorna um objeto Options do Chrome com um User-Agent aleatório."""
+        user_agent = random.choice(settings.USER_AGENTS)
         options = Options()
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
-        if user_agent:
-            options.add_argument(f"user-agent={user_agent}")
+        options.add_argument(f"user-agent={user_agent}")
         return options
 
     def _is_allowed_by_robots(self, url: str) -> bool:
@@ -191,81 +190,50 @@ class ContentExtractor:
             return None
         
     def _extract_with_html_strategies(self, url: str) -> str | None:
-        # Tentativa com Newspaper3k
+        """Tenta extrair conteúdo HTML usando Newspaper3k e, como fallback, o Selenium."""
+        # --- Estratégia 1: Newspaper3k (Rápida) ---
         try:
+            # Atualiza o user-agent para cada tentativa
+            self.newspaper_config.browser_user_agent = random.choice(settings.USER_AGENTS)
             article = Article(url, config=self.newspaper_config)
             article.download()
             article.parse()
             if article.text and len(article.text) > 250:
-                settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k para {url}. Tamanho: {len(article.text)} chars. Conteúdo (primeiros 200 chars): {article.text[:200]}...")
+                self.logger.info(f"Extração bem-sucedida com Newspaper3k para {url}.")
                 return article.text
-            else:
-                settings.logger.debug(f"Newspaper3k falhou ou extraiu pouco texto (<250 chars) para {url}. Tamanho: {len(article.text) if article.text else 0} chars.")
+            self.logger.debug(f"Newspaper3k extraiu pouco texto para {url}.")
         except Exception as e:
-            settings.logger.debug(f"Newspaper3k falhou completamente para {url}: {e}")
-            pass
+            self.logger.debug(f"Newspaper3k falhou para {url}: {e}")
 
-        # Fallback com Selenium
+        # --- Estratégia 2: Selenium (Lenta e Robusta) ---
+        if not self.driver_path:
+            self.logger.error("ChromeDriver não está disponível. Pulando extração com Selenium.")
+            return None
+            
+        self.logger.info(f"Fallback para Selenium para a URL: {url}")
         driver = None
         try:
-            user_agent = random.choice(settings.USER_AGENTS)
-            options = self._setup_chrome_options(user_agent=user_agent)
-            
             service = Service(executable_path=self.driver_path)
+            options = self._setup_chrome_options()
             driver = webdriver.Chrome(service=service, options=options)
-            driver.set_page_load_timeout(30)
+            driver.set_page_load_timeout(60)
+
             driver.get(url)
+            # Um pequeno delay para dar chance ao JS de carregar
+            time.sleep(random.uniform(2, 4))
             
-            # ADICIONADO: Um pequeno delay para dar tempo à página de carregar JavaScript.
-            # No notebook, você usa 3 segundos. Vamos tentar um valor conservador aqui.
-            time.sleep(random.uniform(2, 4)) 
+            # Tenta usar Newspaper no HTML renderizado pelo Selenium
+            article_selenium = Article("", config=self.newspaper_config)
+            article_selenium.set_html(driver.page_source)
+            article_selenium.parse()
+            if article_selenium.text and len(article_selenium.text) > 250:
+                self.logger.info(f"Extração bem-sucedida com Newspaper3k (renderizado) para {url}.")
+                return article_selenium.text
             
-            # Espera mais inteligente por elementos do corpo do texto, seletor mais específico
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "body article, body .main-content, body .post, body p"))
-                # Adicionado 'body p' como fallback para garantir que pelo menos algum texto de parágrafo esteja presente
-            )
-            
-            # Tentativa com Newspaper no HTML renderizado
-            try:
-                article = Article("", config=self.newspaper_config)
-                article.set_html(driver.page_source)
-                article.parse()
-                if article.text and len(article.text) > 250:
-                    settings.logger.info(f"Extração HTML bem-sucedida com Newspaper3k (Selenium renderizado) para {url}. Tamanho: {len(article.text)} chars. Conteúdo (primeiros 200 chars): {article.text[:200]}...")
-                    return article.text
-                else:
-                    settings.logger.debug(f"Newspaper3k (Selenium renderizado) falhou ou extraiu pouco texto (<250 chars) para {url}. Tamanho: {len(article.text) if article.text else 0} chars.")
-            except Exception as e:
-                settings.logger.debug(f"Newspaper3k (Selenium renderizado) falhou completamente para {url}: {e}")
-                pass
-            
-            # Fallback genérico com BeautifulSoup
-            soup = BeautifulSoup(driver.page_source, "html.parser")
-            
-            # Tenta seletores mais específicos para o conteúdo principal
-            main_content = soup.select_one('article, .main-content, .post, .content-body, .article-body, #content-main')
-            
-            extracted_text = ""
-            if main_content:
-                extracted_text = main_content.get_text("\n", strip=True)
-                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (seletor) para {url}. Tamanho: {len(extracted_text)} chars. Conteúdo (primeiros 200 chars): {extracted_text[:200]}...")
-            else:
-                # Se nenhum seletor específico funcionar, tenta o corpo inteiro
-                extracted_text = soup.body.get_text("\n", strip=True)
-                settings.logger.info(f"Extração HTML bem-sucedida com BeautifulSoup (body fallback) para {url}. Tamanho: {len(extracted_text)} chars. Conteúdo (primeiros 200 chars): {extracted_text[:200]}...")
-            
-            if len(extracted_text) > 250: # Verificação para garantir texto significativo
-                return extracted_text
-            else:
-                settings.logger.warning(f"Extração HTML com BeautifulSoup (ambos seletores) resultou em pouco texto (<250 chars) para {url}. Tamanho: {len(extracted_text)} chars.")
-                return None # Retorna None se o texto for insignificante
-        except TimeoutException:
-            settings.logger.error(f"Timeout de carregamento de página excedido para '{url}' após 30 segundos.")
-            # Retorna None, pois a extração falhou devido ao timeout
+            self.logger.warning(f"Nenhuma estratégia de extração com Selenium produziu texto suficiente para {url}.")
             return None
-        except Exception as e:
-            settings.logger.error(f"Erro Selenium para {url}: {e}")
+        except (TimeoutException, WebDriverException) as e:
+            self.logger.error(f"Erro no Selenium para {url}: {type(e).__name__}")
             return None
         finally:
             if driver:

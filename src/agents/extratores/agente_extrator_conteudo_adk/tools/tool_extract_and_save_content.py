@@ -4,7 +4,7 @@ from pathlib import Path
 from config import settings
 from sqlalchemy.orm import Session
 from src.database.db_utils import get_db_session
-from src.data_processing.content_extractor import ContentExtractor
+from src.data_processing.content_extractor import ArgusContentExtractor
 from src.database.create_db_tables import NewsArticle
 
 MAX_EXTRACTION_RETRIES = 5
@@ -28,7 +28,7 @@ def tool_extract_and_save_content(article_id: int, url: str) -> dict:
         status_retorno = "error"
         message = f"Erro inesperado no processamento do article_id {article_id}."
 
-        extractor = ContentExtractor()
+        extractor = ArgusContentExtractor()
         full_text = extractor.extract_text_from_url(url)
         
         # Lista de termos que indicam uma página de CAPTCHA ou bloqueio

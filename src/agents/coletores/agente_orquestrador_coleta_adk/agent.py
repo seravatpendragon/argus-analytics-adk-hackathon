@@ -48,6 +48,7 @@ except ImportError as e:
 # --- PASSO 1: Transformar Sub-Agentes em Ferramentas ---
 # Envolvemos cada agente coletor em um 'AgentTool' para que o orquestrador LLM possa usá-los.
 # Pense nisso como dar um "cartão de visita" de cada especialista para o gerente.
+profile = settings.AGENT_PROFILES.get("orquestrador")
 lista_de_ferramentas = [
     agent_tool.AgentTool(agent=AgenteColetorNewsAPI_ADK),
     agent_tool.AgentTool(agent=AgenteColetorRSS_ADK),
@@ -63,17 +64,19 @@ lista_de_ferramentas = [
 
 # --- PASSO 2: Definir o Agente Orquestrador Inteligente ---
 # Agora, usamos um LlmAgent, que tem um "cérebro" (o modelo do Vertex AI).
-agente_config = settings.AGENT_CONFIGS.get("orquestrador", {})
-MODELO_LLM_ORQUESTRADOR = agente_config.get("model_name")
+
+
 
 AgenteOrquestradorColeta_ADK = LlmAgent(
-    name="agente_orquestrador_coleta_v2_vertex",
-    model=MODELO_LLM_ORQUESTRADOR,
+    name="agente_orquestrador",
+    model=profile.get("model_name"),
+    # CORREÇÃO: Usando o nome de parâmetro correto
+    generate_content_config=profile.get("generate_content_config"),
     instruction=agent_prompt.PROMPT,
     description="Agente inteligente que analisa um pedido e aciona os agentes coletores corretos em paralelo.",
-    # Passamos a lista de "cartões de visita" (ferramentas) para o gerente.
     tools=lista_de_ferramentas,
 )
+
 settings.logger.info(f"Agente Orquestrador Inteligente '{AgenteOrquestradorColeta_ADK.name}' carregado com {len(lista_de_ferramentas)} ferramentas.")
 
 # --- Bloco de Teste Atualizado ---
@@ -100,7 +103,7 @@ if __name__ == '__main__':
         await runner.session_service.create_session(app_name="test_app_orchestrator", user_id=user_id, session_id=session_id)
         
         # Agora podemos fazer um pedido em linguagem natural
-        prompt_text = "Por favor, inicie a coleta de notícias de portais RSS e busque os dados da CVM."
+        prompt_text = "Por favor, inicie a coleta de noticias, indicadores das empresas e macroeconomicos."
         message = Content(role='user', parts=[Part(text=prompt_text)])
         
         print(f"\n--- ENVIANDO PROMPT PARA O ORQUESTRADOR: '{prompt_text}' ---")
