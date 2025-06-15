@@ -1,6 +1,7 @@
 # src/database/db_utils.py
 # -*- coding: utf-8 -*-
 
+import json
 import re
 import sys
 import os
@@ -614,3 +615,44 @@ def get_or_create_segment(session: Session, segment_name: str, subsector_id: int
         session.flush()
         settings.logger.info(f"    Criado novo Segmento: '{segment_name}'")
     return segment
+
+def get_articles_pending_analysis(session: Session, limit: int = 50) -> list[dict]:
+    """
+    Busca artigos que já tiveram seu conteúdo extraído e estão prontos para a análise de IA.
+    """
+    try:
+        articles = (
+            session.query(NewsArticle)
+            .filter(NewsArticle.processing_status == 'pending_llm_analysis')
+            .filter(NewsArticle.article_text_content != None)
+            .limit(limit)
+            .all()
+        )
+        settings.logger.info(f"Encontrados {len(articles)} artigos para análise.")
+        # CORREÇÃO: Usando a coluna correta 'news_article_id'
+        return [
+            {"article_id": article.news_article_id, "text": article.article_text_content}
+            for article in articles
+        ]
+    except Exception as e:
+        settings.logger.error(f"Erro ao buscar artigos para análise: {e}", exc_info=True)
+        return []
+
+def update_article_with_analysis(article_id: int, analysis_dict: dict): # <-- MUDANÇA: Recebe um dicionário
+    """
+    Atualiza um artigo com o dicionário de análise e muda seu status.
+    """
+    with get_db_session() as session:
+        try:
+            article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
+            if article:
+                # MUDANÇA: Salva o dicionário diretamente. SQLAlchemy/PostgreSQL cuidam da serialização.
+                article.llm_analysis_json = analysis_dict 
+                article.processing_status = 'analysis_complete'
+                session.commit()
+                settings.logger.info(f"Análise do artigo {article_id} salva com sucesso no banco de dados.")
+            else:
+                settings.logger.warning(f"Artigo com ID {article_id} não encontrado para salvar a análise.")
+        except Exception as e:
+            session.rollback()
+            settings.logger.error(f"Erro ao salvar análise para o artigo {article_id}: {e}", exc_info=True)

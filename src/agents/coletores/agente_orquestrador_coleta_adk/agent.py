@@ -68,7 +68,7 @@ lista_de_ferramentas = [
 
 
 AgenteOrquestradorColeta_ADK = LlmAgent(
-    name="agente_orquestrador",
+    name="agente_orquestrador_coleta",
     model=profile.get("model_name"),
     # CORREÇÃO: Usando o nome de parâmetro correto
     generate_content_config=profile.get("generate_content_config"),
