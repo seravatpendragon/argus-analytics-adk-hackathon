@@ -24,12 +24,13 @@ Você deve retornar sua análise como um objeto JSON, com os seguintes campos:
 - `justificativa_impacto_maslow` (string): Uma breve explicação (2-4 frases) de como a notícia impacta as necessidades de Maslow identificadas, correlacionando o evento com as categorias e as razões para os scores atribuídos, **sempre contextualizando a relevância para o mercado/público externo.**
 
 **Instruções para a análise:**
-1.  Leia primeiro o "Contexto da Notícia" para entender o foco da análise.
-2.  Atribua um score entre 0.0 (nenhum impacto) e 1.0 (impacto muito forte) para CADA UMA das 5 categorias de Maslow no dicionário `maslow_impact_scores`. VOCÊ DEVE INCLUIR TODAS AS 5 CATEGORIAS NO DICIONÁRIO.
-3.  Um impacto pode ser positivo ou negativo, mas o score representa a *magnitude* do impacto naquela necessidade. A natureza positiva/negativa será inferida a partir de outras análises (sentimento).
-4.  **Se a notícia descreve um evento rotineiro, interno, ou de baixa relevância para o mercado financeiro/público externo, atribua 0.0 ou um valor muito baixo (e.g., 0.1) para todas as categorias de Maslow no dicionário, exceto se houver um impacto direto e claro em alguma delas que justifique um valor ligeiramente maior (máximo 0.2 para eventos como confraternizações internas).**
-5.  O `score_maslow` deve ser uma síntese da magnitude geral do impacto, escalonado de 0 a 10, **refletindo a relevância para o mercado.**
-6.  Identifique a `maslow_impact_primary_category` e a `maslow_impact_secondary_category` baseando-se no primeiro e segundo maior score no `maslow_impact_scores`, desde que seja um impacto notável (score > 0.2).
+1.  Você receberá um resumo do texto e uma lista das principais entidades identificadas.
+2.  Foque sua análise no sentimento geral do resumo, especialmente em como ele se relaciona com as entidades fornecidas.
+3.  Atribua um score entre 0.0 (nenhum impacto) e 1.0 (impacto muito forte) para CADA UMA das 5 categorias de Maslow no dicionário `maslow_impact_scores`. VOCÊ DEVE INCLUIR TODAS AS 5 CATEGORIAS NO DICIONÁRIO.
+4.  Um impacto pode ser positivo ou negativo, mas o score representa a *magnitude* do impacto naquela necessidade. A natureza positiva/negativa será inferida a partir de outras análises (sentimento).
+5.  **Se a notícia descreve um evento rotineiro, interno, ou de baixa relevância para o mercado financeiro/público externo, atribua 0.0 ou um valor muito baixo (e.g., 0.1) para todas as categorias de Maslow no dicionário, exceto se houver um impacto direto e claro em alguma delas que justifique um valor ligeiramente maior (máximo 0.2 para eventos como confraternizações internas).**
+6.  O `score_maslow` deve ser uma síntese da magnitude geral do impacto, escalonado de 0 a 10, **refletindo a relevância para o mercado.**
+7.  Identifique a `maslow_impact_primary_category` e a `maslow_impact_secondary_category` baseando-se no primeiro e segundo maior score no `maslow_impact_scores`, desde que seja um impacto notável (score > 0.2).
 
 **Exemplo 1 (Impacto misto):**
 Contexto da Notícia: A notícia é predominantemente sobre: EMPRESA. A entidade/tema principal é 'Petrobras'. O identificador padronizado é 'PETR4-SA'.

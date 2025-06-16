@@ -12,10 +12,10 @@ BASE_RETRY_DELAY_SECONDS = 60
 
 def tool_extract_and_save_content(article_id: int, url: str) -> dict:
     """
-    Extrai o texto de uma URL, lida com diferentes formatos e falhas,
-    e atualiza o status do artigo no banco de dados.
+    Extrai o texto de uma URL e atualiza o status do artigo no banco de dados
+    com uma lógica de estados robusta.
     """
-    time.sleep(1.5) # Delay para um scraping cortês
+    time.sleep(1.5) 
     settings.logger.info(f"Processando extração para article_id: {article_id}, URL: {url}")
 
     db_session: Session | None = None
@@ -25,52 +25,46 @@ def tool_extract_and_save_content(article_id: int, url: str) -> dict:
         if not article:
             raise ValueError(f"Artigo com ID {article_id} não encontrado.")
 
-        status_retorno = "error"
-        message = f"Erro inesperado no processamento do article_id {article_id}."
-
+        # Instancia nosso extrator
         extractor = ArgusContentExtractor()
         full_text = extractor.extract_text_from_url(url)
         
-        # Lista de termos que indicam uma página de CAPTCHA ou bloqueio
-        palavras_de_bloqueio = [
-            "not a robot", "unusual activity", "are you a robot", 
-            "enable javascript", "please make sure your browser supports",
-            "verificar que não é um robô"
-        ]
-        
-        # Checagem 1: É uma página de bloqueio permanente?
-        if full_text and any(palavra in full_text.lower() for palavra in palavras_de_bloqueio):
-            message = f"Extração para article_id {article_id} bloqueada por página de CAPTCHA/WAF."
-            article.processing_status = 'extraction_blocked' # Status final, não tenta de novo
-            article.article_text_content = "CONTEÚDO BLOQUEADO POR WAF/CAPTCHA" # Salva um registro claro
-            article.retries_count = MAX_EXTRACTION_RETRIES # Define para o máximo para sair da fila de retry
-            article.next_retry_at = None
-            status_retorno = "failure_blocked"
-        
-        # Checagem 2: Se não for um bloqueio, é uma falha normal (texto nulo ou curto)?
-        elif not full_text or len(full_text) < 250:
-            article.retries_count = (article.retries_count or 0) + 1
-            if article.retries_count < MAX_EXTRACTION_RETRIES:
-                delay = BASE_RETRY_DELAY_SECONDS * (2 ** article.retries_count)
-                article.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
-                message = f"Extração falhou para article_id {article_id} (tentativa {article.retries_count}). Próxima agendada."
-                article.processing_status = 'pending_extraction_retry'
-                status_retorno = "partial_failure"
-            else:
-                message = f"Extração falhou permanentemente para article_id {article_id} após {MAX_EXTRACTION_RETRIES} tentativas."
-                article.processing_status = 'extraction_failed'
-                status_retorno = "failure"
-        
-        # Checagem 3: Se passou por tudo, é um sucesso!
-        else:
+        status_retorno = "error"
+        message = ""
+
+        # --- NOVA LÓGICA DE ESTADOS ---
+
+        # Cenário 1: Extração bem-sucedida
+        if full_text and len(full_text) > settings.MIN_ARTICLE_LENGTH:
             article.article_text_content = full_text
-            article.processing_status = 'pending_llm_analysis'
+            article.processing_status = 'pending_llm_analysis' # PRONTO PARA ANÁLISE
             article.retries_count = 0
             article.next_retry_at = None
-            message = f"Extração bem-sucedida para article_id {article_id}. {len(full_text)} caracteres."
             status_retorno = "success"
+            message = f"Extração bem-sucedida para article_id {article_id}. {len(full_text)} caracteres."
 
-        # O resto da função, com o commit e o return, permanece o mesmo
+        # Cenário 2: Extração bloqueada por CAPTCHA ou robots.txt
+        elif full_text in ["EXTRACAO_BLOQUEADA_POR_ROBOTS_TXT", "CONTEUDO_BLOQUEADO_POR_WAF/CAPTCHA"]:
+            article.processing_status = 'extraction_blocked' # FIM DA LINHA (BLOQUEADO)
+            article.article_text_content = full_text
+            status_retorno = "failure_blocked"
+            message = f"Extração para article_id {article_id} bloqueada permanentemente."
+
+        # Cenário 3: Falha na extração, mas ainda há tentativas
+        elif article.retries_count < settings.MAX_EXTRACTION_RETRIES:
+            article.retries_count += 1
+            delay = settings.BASE_RETRY_DELAY_SECONDS * (2 ** article.retries_count)
+            article.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
+            article.processing_status = 'pending_extraction_retry' # TENTAR DE NOVO
+            status_retorno = "partial_failure"
+            message = f"Extração falhou para article_id {article_id} (tentativa {article.retries_count}). Próxima agendada."
+        
+        # Cenário 4: Falha na extração, sem mais tentativas
+        else:
+            article.processing_status = 'extraction_failed' # FIM DA LINHA (FALHA)
+            status_retorno = "failure"
+            message = f"Extração falhou permanentemente para article_id {article_id} após {settings.MAX_EXTRACTION_RETRIES} tentativas."
+
         article.last_processed_at = datetime.now(timezone.utc)
         db_session.commit()
         

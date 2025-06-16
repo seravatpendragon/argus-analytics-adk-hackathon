@@ -66,7 +66,7 @@ async def main():
     settings.logger.info("--- INICIANDO PIPELINE DE ANÁLISE DE CONTEÚDO EM LOTE ---")
     
     with get_db_session() as session:
-        articles_to_analyze = get_articles_pending_analysis(session, limit=5) 
+        articles_to_analyze = get_articles_pending_analysis(session, limit=1) 
     
     if not articles_to_analyze:
         print("Nenhum artigo novo para analisar. Pipeline concluído.")

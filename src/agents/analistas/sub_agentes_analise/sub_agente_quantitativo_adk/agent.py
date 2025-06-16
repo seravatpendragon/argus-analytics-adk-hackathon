@@ -87,7 +87,7 @@ if __name__ == '__main__':
         )
         
         texto_exemplo = (
-            "A Petrobras realizou um evento interno de confraternização entre seus funcionários, sem anúncios ou mudanças operacionais."
+            "Este é um teste. Um teste. Este é um teste. Teste, teste, teste. Este é um teste. Um teste. Este é um teste. Teste, teste, teste. Este é um teste. Um teste. Este é um teste. Teste, teste, teste. Este é um teste. Um teste. Este é um teste. Teste, teste, teste. Este é um teste. Um teste. Este é um teste. O teste. O teste é o teste. O teste é o teste do teste. O teste. O teste é o teste. O teste é o teste do teste. O teste. O teste é o teste. O teste é o teste do teste. O teste. O teste é o teste. O teste é o teste do teste. Teste. Teste, teste. Teste, teste, teste. Teste. Teste, teste. Teste, teste, teste. Teste. Teste, teste. Teste, teste, teste. Teste. Teste, teste. Teste, teste, teste. Teste. Teste, teste. Teste, teste, teste. Um teste é um teste. Este teste é um teste. Um teste é um teste. Este teste é um teste. Um teste é um teste. Este teste é um teste. Um teste é um teste. Este teste é um teste."
         )
         
         message = Content(role='user', parts=[Part(text=texto_exemplo)])
