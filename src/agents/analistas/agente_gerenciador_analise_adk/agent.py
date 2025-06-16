@@ -4,6 +4,7 @@ from pathlib import Path
 import asyncio
 import json
 
+
 # Bloco de import padrão...
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
@@ -11,6 +12,7 @@ try:
     if str(PROJECT_ROOT) not in sys.path: sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
+
 
 from config import settings
 from google.adk.agents import LlmAgent
@@ -24,6 +26,8 @@ from src.agents.analistas.sub_agentes_analise.sub_agente_quantitativo_adk.agent 
 from src.agents.analistas.sub_agentes_analise.sub_agente_resumo_adk.agent import SubAgenteResumo_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_sentimento_adk.agent import SubAgenteSentimento_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_identificador_entidade_adk.agent import SubAgenteIdentificadorEntidades_ADK
+from src.agents.analistas.sub_agentes_analise.sub_agente_impacto_maslow_adk.agent import SubAgenteImpactoMaslow_ADK
+from src.agents.analistas.sub_agentes_analise.sub_agente_stakeholders_adk.agent import SubAgenteStakeholders_ADK
 from . import prompt as agent_prompt
 
 # --- Definição do Agente Gerente ---
@@ -34,6 +38,8 @@ lista_de_ferramentas = [
     agent_tool.AgentTool(agent=SubAgenteResumo_ADK),
     agent_tool.AgentTool(agent=SubAgenteSentimento_ADK),
     agent_tool.AgentTool(agent=SubAgenteIdentificadorEntidades_ADK),
+    agent_tool.AgentTool(agent=SubAgenteStakeholders_ADK), 
+    agent_tool.AgentTool(agent=SubAgenteImpactoMaslow_ADK)
 ]
 
 AgenteGerenciadorAnalise_ADK = LlmAgent(

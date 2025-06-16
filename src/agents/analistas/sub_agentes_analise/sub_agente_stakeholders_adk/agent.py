@@ -1,8 +1,7 @@
-import os
-import sys
+# src/agents/analistas/sub_agentes_analise/sub_agente_stakeholders_adk/agent.py
+
+import os, sys, asyncio, json
 from pathlib import Path
-import asyncio
-import json
 
 # Bloco de import padrão
 try:
@@ -21,47 +20,38 @@ from google.genai.types import Content, Part
 from . import prompt as agent_prompt
 
 # --- Definição do Agente ---
-# Usando o perfil "analista_rapido" para otimizar custo e velocidade
-profile = settings.AGENT_PROFILES.get("analista_rapido")
+profile = settings.AGENT_PROFILES.get("analista_profundo")
 
-SubAgenteIdentificadorEntidades_ADK = LlmAgent(
-    name="sub_agente_identificador_entidades",
+SubAgenteStakeholders_ADK = LlmAgent(
+    name="sub_agente_stakeholders",
     model=profile.get("model_name"),
     generate_content_config=profile.get("generate_content_config"),
     planner=profile.get("planner"),
     instruction=agent_prompt.PROMPT,
-    description="Agente especialista que identifica empresas, organizações e pessoas em um texto e associa tickers de ações quando aplicável."
+    description="Agente que identifica o principal stakeholder impactado por uma notícia."
 )
 
-settings.logger.info(f"Agente '{SubAgenteIdentificadorEntidades_ADK.name}' carregado.")
-
-# --- Bloco de Teste Standalone ---
+# --- Bloco de Teste ---
 if __name__ == '__main__':
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
-    
+
     async def run_test():
-        runner = Runner(agent=SubAgenteIdentificadorEntidades_ADK, app_name="test_app_entidades", session_service=InMemorySessionService())
-        user_id, session_id = "test_user_entid", "test_session_entid"
+        runner = Runner(agent=SubAgenteStakeholders_ADK, app_name="test_app_stakeholders", session_service=InMemorySessionService())
+        user_id, session_id = "test_user_stake", "test_session_stake"
+        await runner.session_service.create_session(app_name=runner.app_name, user_id=user_id, session_id=session_id)
         
-        await runner.session_service.create_session(
-            app_name=runner.app_name, user_id=user_id, session_id=session_id
-        )
-        
-        texto_exemplo = (
-            "Petrobras afunda!"
-            "A ação da Petrobras caiu 1%, dentro da oscilação normal de mercado, após anúncio neutro do governo."
-        )
+        texto_exemplo = "O governo anunciou medidas para arrecadar R$ 30 bi, mas fontes oficiais negam qualquer proposta. Analistas divergem sobre os impactos."
         
         message = Content(role='user', parts=[Part(text=texto_exemplo)])
         
-        print(f"\n--- ENVIANDO TEXTO PARA O AGENTE IDENTIFICADOR DE ENTIDADES ---")
+        print(f"\n--- ENVIANDO TEXTO PARA O AGENTE DE STAKEHOLDERS ---")
         async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
             if event.is_final_response():
-                print("\n--- RESPOSTA FINAL (JSON de entidades) ---")
+                print("\n--- RESPOSTA FINAL (JSON de Stakeholders) ---")
                 try:
                     final_json = json.loads(event.content.parts[0].text)
                     print(json.dumps(final_json, indent=2, ensure_ascii=False))
                 except json.JSONDecodeError:
                     print(event.content.parts[0].text)
-
+    
     asyncio.run(run_test())

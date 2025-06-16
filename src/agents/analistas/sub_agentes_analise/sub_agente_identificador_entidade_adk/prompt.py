@@ -20,6 +20,6 @@ e identificar as entidades relevantes, classificando-as por importância e conte
   ],
   "foco_principal_sugerido": "NOME_ENTIDADE_FOCAL", // Nome da entidade com maior grau_relevancia_qualitativo
   "contexto_dominante": "DESCRIÇÃO_CURTA", // Descreva o contexto geral predominante da notícia (ex: "Resultado financeiro", "Crise regulatória")
-  "alertas": ["TITULO_ENGANOSO", "VIÉS_NA_COBERTURA", "DADOS_INSUFICIENTES"], // Lista de alertas, se aplicável.
+  "alertas": ["TITULO_ENGANOSO", "VIÉS_NA_COBERTURA", "DADOS_INSUFICIENTES", "CONFLITO_DE_INTERESSE", "INCONSISTENCIA_INTERNA", "INFERENCIA_ESPECULATIVA"], // Lista de alertas, se aplicável.
   "justificativa_geral": "Breve justificativa para o foco principal e contexto dominante."
 }"""

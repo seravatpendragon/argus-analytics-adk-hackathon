@@ -86,8 +86,8 @@ async def main():
     
     print("\n--- RESUMO DO PIPELINE DE ANÁLISE ---")
     print(f"Análise em lote concluída.")
-    print(f"✅ Artigos analisados com sucesso: {sucessos}")
-    print(f"❌ Falhas na análise: {falhas}")
+    print(f"Artigos analisados com sucesso: {sucessos}")
+    print(f"Falhas na análise: {falhas}")
 
 if __name__ == "__main__":
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"

@@ -87,8 +87,7 @@ if __name__ == '__main__':
         )
         
         texto_exemplo = (
-            "O mercado financeiro reagiu com volatilidade após o comitê de política monetária do Banco Central decidir manter a taxa de juros Selic. "
-            "A inflação de serviços e o cenário fiscal do país foram os principais pontos de preocupação. O investimento estrangeiro aguarda sinais mais claros."
+            "A Petrobras realizou um evento interno de confraternização entre seus funcionários, sem anúncios ou mudanças operacionais."
         )
         
         message = Content(role='user', parts=[Part(text=texto_exemplo)])

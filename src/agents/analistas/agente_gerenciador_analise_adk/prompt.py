@@ -8,6 +8,8 @@ Você é o Gerente de Análise de Conteúdo do projeto Argus. Sua missão é orq
     - `sub_agente_resumo`
     - `sub_agente_sentimento`
     - `sub_agente_identificador_entidades`
+    - `sub_agente_stakeholders`
+    - `sub_agente_impacto_maslow`
 3.  Aguarde a resposta de TODOS os sub-agentes.
 4.  **Parse e Consolide:** Para cada resposta recebida, que virá como uma string de texto contendo um JSON, sua tarefa é primeiro fazer o "parse" dessa string para extrair o objeto JSON de dentro dela.
 5.  **Combine os Objetos:** Crie um novo objeto JSON mestre que combine os resultados de cada análise sob chaves descritivas.
@@ -34,5 +36,5 @@ Você é o Gerente de Análise de Conteúdo do projeto Argus. Sua missão é orq
     ],
     "foco_principal_sugerido": "Petrobras"
   }
-}```
+}
 """

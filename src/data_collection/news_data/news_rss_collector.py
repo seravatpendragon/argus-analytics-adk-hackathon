@@ -18,6 +18,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 
 # --- Bloco Padrão de Configuração e Imports ---
@@ -85,20 +88,47 @@ class RSSCollector:
             return url
 
     def _resolve_redirect_with_selenium(self, url: str) -> str:
-        """ Usa o navegador para resolver redirects complexos. """
+        """ Usa o navegador para resolver redirects complexos com espera explícita e autocura. """
+        # Garante que temos um driver funcionando antes de começar.
         if not self.driver:
-            return url
+            settings.logger.warning("Driver do Selenium não estava ativo. Tentando reiniciar...")
+            self.driver = self._start_driver()
+            if not self.driver: # Se ainda assim falhar, não podemos continuar.
+                settings.logger.error("Falha catastrófica ao reiniciar o driver do Selenium.")
+                return url
+
         try:
             self.driver.get(url)
-            # A espera implícita ou explícita (WebDriverWait) pode ser usada aqui se necessário,
-            # mas o driver.current_url após o .get() com o timeout já é muito eficaz.
+            
+            # ESPERA EXPLÍCITA:
+            # Espera por até 15 segundos até que a URL atual NÃO contenha mais 'news.google.com'.
+            # A função lambda é executada repetidamente até retornar True (ou o tempo esgotar).
+            WebDriverWait(self.driver, 15).until(
+                lambda driver: 'news.google.com' not in driver.current_url
+            )
+            
+            # Se a condição foi atendida, a URL mudou e podemos retorná-la.
             return self.driver.current_url
-        # CORREÇÃO: Capturando o TimeoutException especificamente
+            
         except TimeoutException:
-            settings.logger.error(f"Timeout de carregamento de página com Selenium para '{url}'.")
-            return url # Retorna a URL original se estourar o tempo
+            # Se após 15s a URL não mudou, pode haver um pop-up ou erro.
+            # Tentamos uma última vez pegar a URL, pois ela pode ter mudado no último instante.
+            final_url_on_timeout = self.driver.current_url
+            if final_url_on_timeout != url:
+                settings.logger.warning(f"Timeout ao esperar a URL mudar de '{url}', mas a URL final foi capturada: {final_url_on_timeout}")
+                return final_url_on_timeout
+            else:
+                 settings.logger.error(f"Timeout de redirecionamento com Selenium para '{url}'. A URL não mudou.")
+                 return url
+
         except Exception as e:
-            settings.logger.error(f"Erro no Selenium para '{url}': {e}")
+            # LÓGICA DE AUTOCURA:
+            # Se qualquer outro erro ocorrer, assume que o driver está instável.
+            # Descarta o driver antigo para forçar a criação de um novo na próxima vez.
+            settings.logger.error(f"Erro no Selenium para '{url}': {e}. O driver será reiniciado.")
+            if self.driver:
+                self.driver.quit()
+            self.driver = None 
             return url
     
     def _get_final_article_link(self, raw_link: str) -> tuple[str, bool]:

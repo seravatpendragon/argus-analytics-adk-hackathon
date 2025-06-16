@@ -12,7 +12,7 @@ from src.data_collection.news_data.news_rss_collector import RSSCollector
 
 def load_json_file(file_path: Path) -> list | None:
     if not file_path.exists():
-        settings.logger.error(f"Arquivo de configuração não encontrado: {file_path}")
+        settings.logger.error(f"Arquivo de configuração não encontrado: {file_path}") 
         return None
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
