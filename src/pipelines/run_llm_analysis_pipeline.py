@@ -1,113 +1,186 @@
-import os, sys, asyncio, json, hashlib
-from pathlib import Path
-from diskcache import Cache
-from sklearn.metrics.pairwise import cosine_similarity
+import os
+import asyncio
+import hashlib
 import numpy as np
+from diskcache import Cache
+from vertexai.language_models import TextEmbeddingModel
 
-# Bloco de import padrão ...
+# Imports internos
 from config import settings
 from src.agents.agent_utils import run_agent_and_get_final_response
-from src.database.db_utils import batch_update_embeddings, get_articles_pending_analysis, get_db_session, update_article_with_analysis, update_article_embedding
+from src.database.db_utils import (
+    get_articles_pending_analysis,
+    get_db_session,
+    update_article_with_analysis,
+    find_similar_article,
+    batch_update_precomputed_embeddings
+)
 from src.agents.analistas.agente_gerenciador_analise_adk.agent import AgenteGerenciadorAnalise_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_resumo_adk.agent import SubAgenteResumo_ADK
 from src.utils.parser_utils import parse_llm_json_response
 
-# Importa as bibliotecas corretas do Vertex AI
-from vertexai.language_models import TextEmbeddingModel
-
-# --- SETUP DA CAMADA DE OTIMIZAÇÃO ---
+# --- CONFIGURAÇÕES ---
 MAX_CONCURRENT_TASKS = 3
 RAG_SIMILARITY_THRESHOLD = 0.98
-MAX_TOKENS_BEFORE_COMPRESSION = 1000
+MAX_TOKENS_BEFORE_COMPRESSION = 1500
+MAX_COMPRESSION_DEPTH = 3
 
-settings.logger.info("Inicializando modelos de otimização e cache...")
+settings.logger.info("Inicializando modelos e cache...")
 embedding_model = TextEmbeddingModel.from_pretrained("text-embedding-005")
 CACHE_DIR = settings.BASE_DIR / ".analysis_cache"
 cache = Cache(CACHE_DIR)
 
 def get_text_hash(text: str) -> str:
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+    return hashlib.sha256(text.encode()).hexdigest()
 
-async def compress_if_needed(text: str, article_id: int) -> str:
-    """Verifica a contagem de tokens e comprime o texto se exceder o limite."""
+def count_tokens(text: str) -> int:
+    """Estimativa de tokens baseada em heurística (4 caracteres por token)"""
+    return len(text) // 4  # Aproximação conservadora
+
+def generate_embedding(text: str) -> list[float]:
+    embeddings = embedding_model.get_embeddings([text])
+    return embeddings[0].values
+
+async def compress_text(text: str, article_id: int, depth=0) -> str:
+    """Compressão recursiva com limite de profundidade"""
+    if depth >= MAX_COMPRESSION_DEPTH:
+        settings.logger.warning(f"Max compression depth reached for article {article_id}")
+        return text
+        
+    token_count = count_tokens(text)
+    if token_count <= MAX_TOKENS_BEFORE_COMPRESSION:
+        return text
+        
     try:
-        token_count = embedding_model.count_tokens(text).total_tokens
-        if token_count > MAX_TOKENS_BEFORE_COMPRESSION:
-            settings.logger.info(f"Artigo {article_id}: Texto longo detectado ({token_count} tokens). Aplicando compressão...")
-            summary_response = await run_agent_and_get_final_response(SubAgenteResumo_ADK, text, f"compress_{article_id}")
-            summary_dict = parse_llm_json_response(summary_response)
-            if summary_dict and "summary" in summary_dict:
-                compressed_text = summary_dict["summary"]
-                new_token_count = embedding_model.count_tokens(compressed_text).total_tokens
-                settings.logger.info(f"Artigo {article_id}: Texto comprimido para {new_token_count} tokens.")
-                return compressed_text
+        settings.logger.info(f"Compressão (nível {depth+1}) para artigo {article_id}...")
+        response = await run_agent_and_get_final_response(
+            SubAgenteResumo_ADK, 
+            text, 
+            f"compress_{article_id}_l{depth}"
+        )
+        
+        # Parse seguro do JSON
+        summary_dict = parse_llm_json_response(response)
+        if not summary_dict or "summary" not in summary_dict:
+            raise ValueError("Resposta de compressão inválida")
+            
+        summary = summary_dict["summary"]
+        return await compress_text(summary, article_id, depth+1)
+        
     except Exception as e:
-        settings.logger.error(f"Artigo {article_id}: Falha na contagem ou compressão de tokens: {e}")
-    return text
+        settings.logger.error(f"Falha na compressão: {e}")
+        return text
 
-async def process_article_with_optimizations(article: dict, semaphore: asyncio.Semaphore):
-    """Orquestra a análise de um único artigo, aplicando Caching, RAG e Compressão."""
+async def process_article_with_optimizations(article, semaphore: asyncio.Semaphore):
     async with semaphore:
-        article_id, original_text = article.get("article_id"), article.get("text")
-        if not all([article_id, original_text]): return False
-
-        text_hash = get_text_hash(original_text)
-
-        # 1. Tenta o Cache (a mais rápida)
-        if text_hash in cache:
-            settings.logger.info(f"CACHE HIT: Artigo {article_id}.")
-            cached_analysis = cache[text_hash]
-            update_article_with_analysis(article_id, cached_analysis)
-            return True
+        article_id = article['news_article_id']
+        text = article['article_text_content']
         
-        # A lógica RAG com pgvector precisará de uma função dedicada em db_utils
-        # Por enquanto, focaremos no fluxo principal.
-
-        # 2. Compressão Seletiva
-        text_to_analyze = await compress_if_needed(original_text, article_id)
-        
-        # 3. Execução Completa da Análise
-        settings.logger.info(f"CACHE/RAG MISS: Análise completa para o artigo {article_id}.")
-        raw_response = await run_agent_and_get_final_response(AgenteGerenciadorAnalise_ADK, text_to_analyze, f"pipeline_{article_id}")
-        
-        if raw_response:
-            analysis_dict = parse_llm_json_response(raw_response)
-            if analysis_dict:
-                update_article_with_analysis(article_id, analysis_dict)
-                # MUDANÇA: Em vez de salvar o embedding, retorna os dados para o batch
-                return {"id": article_id, "text": original_text}
-        
-            return None # Retorna None em caso de falha
-        
-        settings.logger.error(f"Falha total na análise do artigo {article_id}.")
-        return False
+        if not text or not article_id:
+            settings.logger.error(f"Artigo {article_id} sem conteúdo")
+            return None
+            
+        try:
+            # 1. Verificação de Cache
+            text_hash = get_text_hash(text)
+            if text_hash in cache:
+                settings.logger.info(f"Cache hit: Artigo {article_id}")
+                update_article_with_analysis(article_id, cache[text_hash])
+                return {"id": article_id, "cached": True}
+            
+            # 2. Compressão Adaptativa
+            processed_text = text
+            token_count = count_tokens(text)
+            if token_count > MAX_TOKENS_BEFORE_COMPRESSION:
+                settings.logger.info(f"Texto longo ({token_count} tokens estimados). Comprimindo artigo {article_id}...")
+                processed_text = await compress_text(text, article_id)
+                new_token_count = count_tokens(processed_text)
+                settings.logger.info(f"Texto comprimido para {new_token_count} tokens estimados")
+            
+            # 3. Geração de Embedding
+            embedding = await asyncio.to_thread(generate_embedding, processed_text)
+            # Manter como lista de floats (não converter para numpy)
+            
+            # 4. Busca RAG
+            similar = find_similar_article(embedding, RAG_SIMILARITY_THRESHOLD)
+            if similar:
+                settings.logger.info(f"RAG hit: Artigo {article_id} similar ao {similar['id']}")
+                update_article_with_analysis(article_id, similar["analysis"])
+                cache[text_hash] = similar["analysis"]
+                return {"id": article_id, "embedding": embedding}
+            
+            # 5. Análise Completa
+            settings.logger.info(f"Análise completa: Artigo {article_id}")
+            response = await run_agent_and_get_final_response(
+                AgenteGerenciadorAnalise_ADK,
+                processed_text,
+                f"full_analysis_{article_id}"
+            )
+            
+            # Parse seguro do JSON
+            analysis = parse_llm_json_response(response)
+            if not analysis:
+                raise ValueError("Resposta de análise inválida")
+                
+            update_article_with_analysis(article_id, analysis)
+            cache[text_hash] = analysis
+            return {"id": article_id, "embedding": embedding}
+            
+        except Exception as e:
+            settings.logger.exception(f"Falha no artigo {article_id}: {e}")
+            return None
 
 async def main():
-    """Função principal que busca artigos e dispara as análises em lote."""
-    settings.logger.info("--- INICIANDO PIPELINE DE ANÁLISE OTIMIZADO ---")
+    settings.logger.info("--- INÍCIO DO PIPELINE OTIMIZADO ---")
     
-    with get_db_session() as session:
-        articles_to_analyze = get_articles_pending_analysis(session, limit=100)
+    try:
+        with get_db_session() as session:
+            # Obter artigos como dicionários
+            articles = get_articles_pending_analysis(session, limit=5)
+        
+        if not articles:
+            settings.logger.info("Nenhum artigo pendente")
+            return
+            
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+        tasks = [process_article_with_optimizations(a, semaphore) for a in articles]
+        
+        results = []
+        for task in asyncio.as_completed(tasks):
+            try:
+                result = await task
+                if result:
+                    results.append(result)
+            except Exception as e:
+                settings.logger.error(f"Erro em task: {e}")
+        
+        # Atualização em lote de embeddings
+        embeddings_to_update = [
+            (r["id"], r["embedding"]) 
+            for r in results 
+            if "embedding" in r
+        ]
+        
+        if embeddings_to_update:
+            settings.logger.info(f"Atualizando {len(embeddings_to_update)} embeddings...")
+            batch_update_precomputed_embeddings(embeddings_to_update)
+        
+        # Métricas de desempenho
+        success = len(results)
+        cached = sum(1 for r in results if "cached" in r)
+        rag_reused = sum(1 for r in results if "embedding" in r and "cached" not in r)
+        
+        settings.logger.info(
+            f"RESUMO: Artigos={len(articles)} | "
+            f"Sucessos={success} | "
+            f"Cache={cached} | "
+            f"RAG={rag_reused} | "
+            f"Falhas={len(articles) - success}"
+        )
     
-    if not articles_to_analyze:
-        print("Nenhum artigo novo para analisar.")
-        return
+    except Exception as e:
+        settings.logger.critical(f"Falha catastrófica no pipeline: {e}")
 
-    print(f"Encontrados {len(articles_to_analyze)} artigos. Iniciando com concorrência máxima de {MAX_CONCURRENT_TASKS}...")
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
-    tasks = [process_article_with_optimizations(article, semaphore) for article in articles_to_analyze]
-    analysis_results = await asyncio.gather(*tasks)
-    
-    # Filtra apenas os que foram analisados com sucesso
-    successfully_analyzed = [res for res in analysis_results if res is not None]
-    
-    sucessos = len(successfully_analyzed)
-    falhas = len(articles_to_analyze) - sucessos
-    print(f"\n--- RESUMO DA ANÁLISE --- \n✅ Sucessos: {sucessos}\n❌ Falhas: {falhas}")
-
-    # --- NOVA ETAPA DE BATCHING DE EMBEDDINGS ---
-    if successfully_analyzed:
-        batch_update_embeddings(successfully_analyzed)
 if __name__ == "__main__":
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
     asyncio.run(main())

@@ -6,7 +6,8 @@ import re
 import sys
 import os
 from venv import logger
-from sqlalchemy import create_engine, or_, select, func, text
+import numpy as np
+from sqlalchemy import bindparam, create_engine, or_, select, func, text, update
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects import postgresql
@@ -631,27 +632,32 @@ def get_or_create_segment(session: Session, segment_name: str, subsector_id: int
 
 def get_articles_pending_analysis(session: Session, limit: int = 50) -> list[dict]:
     """
-    Busca artigos que já tiveram seu conteúdo extraído e estão prontos para a análise de IA.
+    Retorna artigos pendentes de análise como dicionários
     """
     try:
         articles = (
             session.query(NewsArticle)
-            .filter(NewsArticle.processing_status == 'pending_llm_analysis')
-            .filter(NewsArticle.article_text_content != None)
+            .filter(
+                NewsArticle.processing_status == 'pending_llm_analysis',
+                NewsArticle.article_text_content.isnot(None)
+            )
             .limit(limit)
             .all()
         )
-        settings.logger.info(f"Encontrados {len(articles)} artigos para análise.")
-        # CORREÇÃO: Usando a coluna correta 'news_article_id'
+        
+        # Converter para dicionários
         return [
-            {"article_id": article.news_article_id, "text": article.article_text_content}
-            for article in articles
+            {
+                "news_article_id": a.news_article_id,
+                "article_text_content": a.article_text_content
+            } 
+            for a in articles
         ]
     except Exception as e:
-        settings.logger.error(f"Erro ao buscar artigos para análise: {e}", exc_info=True)
+        settings.logger.error(f"Erro ao buscar artigos pendentes: {e}")
         return []
 
-def update_article_with_analysis(article_id: int, analysis_dict: dict): # <-- MUDANÇA: Recebe um dicionário
+def update_article_with_analysis(article_id: int, analysis_dict: dict):
     """
     Atualiza um artigo com o dicionário de análise e muda seu status.
     """
@@ -659,7 +665,6 @@ def update_article_with_analysis(article_id: int, analysis_dict: dict): # <-- MU
         try:
             article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
             if article:
-                # MUDANÇA: Salva o dicionário diretamente. SQLAlchemy/PostgreSQL cuidam da serialização.
                 article.llm_analysis_json = analysis_dict 
                 article.processing_status = 'analysis_complete'
                 session.commit()
@@ -722,50 +727,75 @@ def update_article_embedding(article_id: int, text: str):
             session.rollback()
             settings.logger.error(f"Erro ao salvar embedding para o artigo {article_id}: {e}", exc_info=True)
 
-def batch_update_embeddings(articles_to_embed: list[dict]):
-    """
-    Recebe uma lista de artigos, gera seus embeddings em lotes de 5,
-    e salva no banco de dados.
+
+def find_similar_article(embedding: list[float], threshold: float) -> dict:
+    """Busca artigos similares usando pgvector e cosine similarity"""
+    from sqlalchemy import text
+    import numpy as np
     
-    Args:
-        articles_to_embed: Uma lista de dicionários, cada um com 'id' and 'text'.
-    """
-    if not embedding_model_for_db:
-        settings.logger.error("Modelo de embedding não inicializado. Pulando salvamento de embeddings.")
+    # Converter para array numpy e depois para string formatada
+    embedding_array = np.array(embedding, dtype=np.float32)
+    embedding_str = "[" + ",".join(str(x) for x in embedding_array) + "]"
+    
+    max_distance = 1 - threshold
+    
+    with get_db_session() as session:
+        query = text("""
+            SELECT news_article_id, llm_analysis_json 
+            FROM "NewsArticles"
+            WHERE (embedding <=> CAST(:embedding AS vector)) < :max_distance
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT 1
+        """)
+        
+        result = session.execute(
+            query,
+            {"embedding": embedding_str, "max_distance": max_distance}
+        ).fetchone()
+        
+        if result:
+            return {
+                "id": result[0],
+                "analysis": result[1]
+            }
+        return None
+
+
+def batch_update_precomputed_embeddings(embeddings_batch: list[tuple[int, list[float]]]):
+    """Atualiza embeddings em lote quando já calculados"""
+    from sqlalchemy import text, bindparam
+    
+    if not embeddings_batch:
         return
 
-    settings.logger.info(f"Iniciando geração de embeddings em lote para {len(articles_to_embed)} artigos...")
+    settings.logger.info(f"Salvando {len(embeddings_batch)} embeddings pré-calculados...")
     
-    # Separa os IDs e textos para facilitar o batching
-    article_ids = [article['id'] for article in articles_to_embed]
-    texts = [article['text'] for article in articles_to_embed]
-    
-    BATCH_SIZE = 5 # Conforme o limite da API
-    all_embeddings = []
-
-    for i in range(0, len(texts), BATCH_SIZE):
-        batch_texts = texts[i:i + BATCH_SIZE]
-        try:
-            # Envia um lote de textos de uma só vez
-            response = embedding_model_for_db.get_embeddings(batch_texts)
-            all_embeddings.extend([embedding.values for embedding in response])
-            settings.logger.info(f"Processado lote de embeddings {i//BATCH_SIZE + 1}...")
-        except Exception as e:
-            settings.logger.error(f"Erro no lote de embedding a partir do índice {i}: {e}")
-            # Preenche com None para manter o alinhamento com os IDs
-            all_embeddings.extend([None] * len(batch_texts))
-
-    # Agora, salva os embeddings no banco
     with get_db_session() as session:
         try:
-            for i, article_id in enumerate(article_ids):
-                if all_embeddings[i] is not None:
-                    session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).update(
-                        {"embedding": all_embeddings[i]},
-                        synchronize_session=False
-                    )
+            # Usar bindparam para tratamento seguro de tipos
+            update_query = text("""
+                UPDATE "NewsArticles"
+                SET embedding = CAST(:embedding AS vector)
+                WHERE news_article_id = :article_id
+            """)
+            
+            params = []
+            for article_id, embedding in embeddings_batch:
+                # Converter embedding para string formatada 
+                embedding_str = "[" + ",".join(str(x) for x in embedding) + "]"
+                params.append({
+                    "article_id": article_id,
+                    "embedding": embedding_str
+                })
+            
+            session.execute(
+                update_query,
+                params
+            )
             session.commit()
-            settings.logger.info(f"Embeddings para {len(all_embeddings)} artigos salvos com sucesso.")
+            settings.logger.info("Embeddings pré-calculados salvos com sucesso!")
+            
         except Exception as e:
             session.rollback()
-            settings.logger.error(f"Erro ao salvar embeddings em lote no banco: {e}")
+            settings.logger.error(f"Erro ao salvar embeddings pré-calculados: {e}")
+            raise
