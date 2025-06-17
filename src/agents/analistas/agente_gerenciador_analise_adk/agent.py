@@ -1,11 +1,10 @@
 import os
 import sys
-from pathlib import Path
-import asyncio
 import json
+import asyncio
+from pathlib import Path
 
-
-# Bloco de import padrão...
+# Bloco de import padrão
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
     PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
@@ -13,75 +12,83 @@ try:
 except NameError:
     PROJECT_ROOT = Path(os.getcwd())
 
-
 from config import settings
-from google.adk.agents import LlmAgent
-from google.adk.tools import agent_tool
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google.adk.agents import BaseAgent
+from google.adk.events import Event
 from google.genai.types import Content, Part
+from src.agents.agent_utils import run_agent_and_get_final_response
+from src.utils.parser_utils import parse_llm_json_response
 
-# Importe os sub-agentes que serão as ferramentas
+# Importe TODOS os sub-agentes especialistas que serão orquestrados
 from src.agents.analistas.sub_agentes_analise.sub_agente_quantitativo_adk.agent import SubAgenteQuantitativo_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_resumo_adk.agent import SubAgenteResumo_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_sentimento_adk.agent import SubAgenteSentimento_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_identificador_entidade_adk.agent import SubAgenteIdentificadorEntidades_ADK
-from src.agents.analistas.sub_agentes_analise.sub_agente_impacto_maslow_adk.agent import SubAgenteImpactoMaslow_ADK
 from src.agents.analistas.sub_agentes_analise.sub_agente_stakeholders_adk.agent import SubAgenteStakeholders_ADK
-from . import prompt as agent_prompt
+from src.agents.analistas.sub_agentes_analise.sub_agente_impacto_maslow_adk.agent import SubAgenteImpactoMaslow_ADK
 
-# --- Definição do Agente Gerente ---
-profile = settings.AGENT_PROFILES.get("orquestrador")
+class AgenteGerenciadorAnalise(BaseAgent):
+    """
+    Um agente procedural que orquestra uma equipe de sub-agentes de análise
+    em um fluxo de enriquecimento de duas etapas para máxima eficiência de custo.
+    """
+    def __init__(self, name: str = "agente_gerenciador_analise_v2", description: str = "Gerente que orquestra uma equipe de sub-agentes para analisar o conteúdo de um artigo."):
+        super().__init__(name=name, description=description)
 
-lista_de_ferramentas = [
-    agent_tool.AgentTool(agent=SubAgenteQuantitativo_ADK),
-    agent_tool.AgentTool(agent=SubAgenteResumo_ADK),
-    agent_tool.AgentTool(agent=SubAgenteSentimento_ADK),
-    agent_tool.AgentTool(agent=SubAgenteIdentificadorEntidades_ADK),
-    agent_tool.AgentTool(agent=SubAgenteStakeholders_ADK), 
-    agent_tool.AgentTool(agent=SubAgenteImpactoMaslow_ADK)
-]
+    async def _run_async_impl(self, context):
+        """
+        Executa a lógica procedural da "linha de montagem de inteligência".
+        """
+        text_to_analyze = context.user_content.parts[0].text
+        yield Event(author=self.name, content=Content(parts=[Part(text="Iniciando análise 360° com fluxo otimizado...")]))
 
-AgenteGerenciadorAnalise_ADK = LlmAgent(
-    name="agente_orquestrador_análise",
-    model=profile.get("model_name"),
-    generate_content_config=profile.get("generate_content_config"),
-    instruction=agent_prompt.PROMPT,
-    description="Agente inteligente que analisa um pedido e aciona os agentes coletores corretos em paralelo.",
-    tools=lista_de_ferramentas,
-    
-)
-
-settings.logger.info(f"Agente '{AgenteGerenciadorAnalise_ADK.name}' carregado com {len(AgenteGerenciadorAnalise_ADK.tools)} sub-agentes-ferramenta.")
-
-# --- Bloco de Teste Standalone ---
-if __name__ == '__main__':
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
-    
-    async def run_test():
-        runner = Runner(agent=AgenteGerenciadorAnalise_ADK, app_name="test_app_gerente_analise", session_service=InMemorySessionService())
-        user_id, session_id = "test_user_gerente", "test_session_gerente"
+        # --- ETAPA 1: Análise Primária em Paralelo (usando texto completo) ---
+        settings.logger.info("Gerente: Iniciando Etapa 1 (Quant, Entidades, Resumo).")
+        tasks_etapa1 = [
+            run_agent_and_get_final_response(SubAgenteQuantitativo_ADK, text_to_analyze, "quant"),
+            run_agent_and_get_final_response(SubAgenteIdentificadorEntidades_ADK, text_to_analyze, "entid"),
+            run_agent_and_get_final_response(SubAgenteResumo_ADK, text_to_analyze, "resumo")
+        ]
+        results1_raw = await asyncio.gather(*tasks_etapa1, return_exceptions=True)
         
-        await runner.session_service.create_session(
-            app_name=runner.app_name, user_id=user_id, session_id=session_id
-        )
+        quant_res = parse_llm_json_response(results1_raw[0]) or {}
+        entidades_res = parse_llm_json_response(results1_raw[1]) or {}
+        resumo_res = parse_llm_json_response(results1_raw[2]) or {}
         
-        # Texto de exemplo para o teste completo
-        texto_exemplo = (
-            "As ações da Petrobras fecharam o pregão em alta de 2,46%. O avanço veio após Israel lançar ataques contra o Irã, o que provocou um salto do preço do petróleo. "
-            "A AIE está monitorando os estoques, mas a OPEP criticou a declaração, afirmando que gera volatilidade desnecessária."
-        )
-        
-        message = Content(role='user', parts=[Part(text=texto_exemplo)])
-        
-        print(f"\n--- ENVIANDO TEXTO PARA O GERENTE DE ANÁLISE ---")
-        async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
-            if event.is_final_response():
-                print("\n--- RESPOSTA FINAL (JSON CONSOLIDADO) ---")
-                try:
-                    final_json = json.loads(event.content.parts[0].text)
-                    print(json.dumps(final_json, indent=2, ensure_ascii=False))
-                except json.JSONDecodeError:
-                    print(event.content.parts[0].text)
+        yield Event(author=self.name, content=Content(parts=[Part(text="Etapa 1 concluída. Preparando para Etapa 2.")]))
 
-    asyncio.run(run_test())
+        # --- ETAPA 2: Análise de Contexto em Paralelo (usando dados da Etapa 1 para otimização) ---
+        settings.logger.info("Gerente: Iniciando Etapa 2 (Sentimento, Stakeholders, Maslow) com texto otimizado.")
+        
+        texto_otimizado_para_etapa2 = json.dumps({
+            "resumo": resumo_res.get("summary", ""),
+            "entidades_identificadas": entidades_res.get("entidades_identificadas", []),
+            "contexto_dominante": entidades_res.get("contexto_dominante", "")
+        })
+
+        tasks_etapa2 = [
+            run_agent_and_get_final_response(SubAgenteSentimento_ADK, texto_otimizado_para_etapa2, "sentim"),
+            run_agent_and_get_final_response(SubAgenteStakeholders_ADK, texto_otimizado_para_etapa2, "stake"),
+            run_agent_and_get_final_response(SubAgenteImpactoMaslow_ADK, texto_otimizado_para_etapa2, "maslow")
+        ]
+        results2_raw = await asyncio.gather(*tasks_etapa2, return_exceptions=True)
+
+        sentimento_res = parse_llm_json_response(results2_raw[0]) or {}
+        stakeholders_res = parse_llm_json_response(results2_raw[1]) or {}
+        maslow_res = parse_llm_json_response(results2_raw[2]) or {}
+
+        yield Event(author=self.name, content=Content(parts=[Part(text="Etapa 2 concluída. Consolidando resultados.")]))
+
+        # --- ETAPA 3: Consolidação Final em Python ---
+        final_analysis = {
+            "analise_quantitativa": quant_res,
+            "analise_resumo": resumo_res,
+            "analise_entidades": entidades_res,
+            "analise_sentimento": sentimento_res,
+            "analise_stakeholders": stakeholders_res,
+            "analise_impacto_maslow": maslow_res
+        }
+        
+        yield Event(author=self.name, content=Content(parts=[Part(text=json.dumps(final_analysis, ensure_ascii=False))]))
+
+AgenteGerenciadorAnalise_ADK = AgenteGerenciadorAnalise()

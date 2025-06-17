@@ -187,7 +187,7 @@ AGENT_PROFILES = {
             safety_settings=SAFETY_SETTINGS
         ),
         "planner": BuiltInPlanner(
-            thinking_config=ThinkingConfig(thinking_budget=-1)
+            thinking_config=ThinkingConfig(thinking_budget=0)
         )
     },
     
@@ -252,7 +252,7 @@ PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "argus-analytics")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") 
 
 
-QUANTIDADE_EXTRACAO = 20
+QUANTIDADE_EXTRACAO = 10000
 QUANTIDADE_AVALIACAO = 100
 MAX_EXTRACTION_RETRIES = 3
 MIN_ARTICLE_LENGTH = 250

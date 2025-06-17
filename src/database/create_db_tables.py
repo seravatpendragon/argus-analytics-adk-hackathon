@@ -2,8 +2,9 @@ import sys
 import os
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, ForeignKey, UniqueConstraint, DateTime, Date, Boolean, Enum as SQLAlchemyEnum, text # Adicione 'text' aqui
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.dialects.postgresql import JSONB # Usaremos JSONB para PostgreSQL
-from sqlalchemy.types import JSON # Fallback para outros BDs como SQLite/DuckDB
+from sqlalchemy.dialects.postgresql import JSONB 
+from sqlalchemy.types import JSON 
+from pgvector.sqlalchemy import Vector
 
 # Adiciona o diretório raiz do projeto ao sys.path
 # Isso permite que o script encontre o módulo config.settings
@@ -93,6 +94,7 @@ class NewsArticle(Base):
     article_text_content = Column(Text, nullable=True) 
     article_type = Column(String, nullable=True) 
     llm_analysis_json = Column(JSON, nullable=True) # Agora reservado para os resultados da análise do LLM
+    embedding = Column(Vector(768), nullable=True) 
     # NOVAS COLUNAS ADICIONADAS:
     summary = Column(Text, nullable=True)
     processing_status = Column(String(50), nullable=True, default='pending_full_text_fetch')

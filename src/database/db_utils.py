@@ -10,10 +10,14 @@ from sqlalchemy import create_engine, or_, select, func, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects import postgresql
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import pandas as pd # Adicionado para o caso de uso de get_latest_effective_date
 
-from typing import List, Dict, Optional # Para type hints (opcional, mas boa prática)
+from typing import List, Dict, Optional
+
+import vertexai
+from vertexai.language_models import TextEmbeddingModel
+
 
 # Importe seu logger de settings e o modelo EconomicIndicatorValue
 from config import settings
@@ -40,6 +44,15 @@ except ImportError as e:
     # Verifique se o arquivo create_db_tables.py está no local correto (src/database/)
     # e se todos os modelos acima estão definidos nele.
     sys.exit(1)
+
+# Inicializa o modelo aqui ou de forma global para reutilização
+try:
+    vertexai.init(project=settings.PROJECT_ID, location=settings.LOCATION)
+    embedding_model_for_db = TextEmbeddingModel.from_pretrained("text-embedding-005")
+
+except Exception as e:
+    settings.logger.warning(f"Não foi possível inicializar o modelo de embedding no db_utils: {e}")
+    embedding_model_for_db = None
 
 _engine = None
 
@@ -656,3 +669,103 @@ def update_article_with_analysis(article_id: int, analysis_dict: dict): # <-- MU
         except Exception as e:
             session.rollback()
             settings.logger.error(f"Erro ao salvar análise para o artigo {article_id}: {e}", exc_info=True)
+
+def get_analyses_for_topic(session: Session, topic: str, days_back: int = 7) -> list[dict]:
+    """
+    Busca no banco todas as análises de artigos que mencionam um determinado tópico
+    nos últimos 'days_back' dias.
+    """
+    try:
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days_back)
+        
+        # Filtra artigos que mencionam o tópico (case-insensitive) e que foram analisados
+        articles = (
+            session.query(NewsArticle)
+            .filter(
+                NewsArticle.processing_status == 'analysis_complete',
+                NewsArticle.llm_analysis_json != None,
+                NewsArticle.publication_date.between(start_date, end_date),
+                or_(
+                    NewsArticle.headline.ilike(f'%{topic}%'),
+                    NewsArticle.article_text_content.ilike(f'%{topic}%')
+                )
+            )
+            .order_by(NewsArticle.publication_date.asc())
+            .all()
+        )
+        return [article.llm_analysis_json for article in articles]
+    except Exception as e:
+        settings.logger.error(f"Erro ao buscar análises para o tópico '{topic}': {e}")
+        return []
+
+def update_article_embedding(article_id: int, text: str):
+    """
+    Gera e salva o embedding de um texto de artigo na linha correspondente do banco de dados.
+    """
+    if not embedding_model_for_db:
+        settings.logger.error("Modelo de embedding não inicializado. Pulando salvamento de embedding.")
+        return
+
+    with get_db_session() as session:
+        try:
+            article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
+            if article:
+                # Gera o embedding a partir do texto original
+                embedding = embedding_model_for_db.get_embeddings([text])[0].values
+                article.embedding = embedding # Salva na coluna 'embedding'
+                session.commit()
+                settings.logger.info(f"Embedding salvo com sucesso para o artigo {article_id}.")
+            else:
+                settings.logger.warning(f"Artigo {article_id} não encontrado para salvar embedding.")
+        except Exception as e:
+            session.rollback()
+            settings.logger.error(f"Erro ao salvar embedding para o artigo {article_id}: {e}", exc_info=True)
+
+def batch_update_embeddings(articles_to_embed: list[dict]):
+    """
+    Recebe uma lista de artigos, gera seus embeddings em lotes de 5,
+    e salva no banco de dados.
+    
+    Args:
+        articles_to_embed: Uma lista de dicionários, cada um com 'id' and 'text'.
+    """
+    if not embedding_model_for_db:
+        settings.logger.error("Modelo de embedding não inicializado. Pulando salvamento de embeddings.")
+        return
+
+    settings.logger.info(f"Iniciando geração de embeddings em lote para {len(articles_to_embed)} artigos...")
+    
+    # Separa os IDs e textos para facilitar o batching
+    article_ids = [article['id'] for article in articles_to_embed]
+    texts = [article['text'] for article in articles_to_embed]
+    
+    BATCH_SIZE = 5 # Conforme o limite da API
+    all_embeddings = []
+
+    for i in range(0, len(texts), BATCH_SIZE):
+        batch_texts = texts[i:i + BATCH_SIZE]
+        try:
+            # Envia um lote de textos de uma só vez
+            response = embedding_model_for_db.get_embeddings(batch_texts)
+            all_embeddings.extend([embedding.values for embedding in response])
+            settings.logger.info(f"Processado lote de embeddings {i//BATCH_SIZE + 1}...")
+        except Exception as e:
+            settings.logger.error(f"Erro no lote de embedding a partir do índice {i}: {e}")
+            # Preenche com None para manter o alinhamento com os IDs
+            all_embeddings.extend([None] * len(batch_texts))
+
+    # Agora, salva os embeddings no banco
+    with get_db_session() as session:
+        try:
+            for i, article_id in enumerate(article_ids):
+                if all_embeddings[i] is not None:
+                    session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).update(
+                        {"embedding": all_embeddings[i]},
+                        synchronize_session=False
+                    )
+            session.commit()
+            settings.logger.info(f"Embeddings para {len(all_embeddings)} artigos salvos com sucesso.")
+        except Exception as e:
+            session.rollback()
+            settings.logger.error(f"Erro ao salvar embeddings em lote no banco: {e}")
