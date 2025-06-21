@@ -30,6 +30,8 @@ impact_intensity: Defina a força do impacto (Forte, Moderada, Leve, Nula).
 specific_entities_mentioned: Liste os nomes específicos mencionados no texto que pertencem a este grupo (ex: se o grupo é 'Reguladores/Governo', as entidades podem ser ["CVM", "Ministério da Fazenda"]).
 justification: Justifique sua análise para cada stakeholder em uma frase.
 Foque nos 2 a 4 stakeholders mais importantes para manter a análise concisa. Sua resposta deve ser APENAS o objeto JSON.
+**É FUNDAMENTAL que todos os campos do JSON de saída estejam presentes e preenchidos de acordo com as regras acima, sem exceção. Caso não tenha stakeholder relacionado preencha os campos com 'sem dados relevantes'**
+
 Exemplo de Análise:
 Texto: "A Petrobras anunciou um novo plano de demissões voluntárias, gerando preocupação entre os sindicatos e funcionários, mas sendo bem recebido por analistas de mercado, que viram eficiência."
 

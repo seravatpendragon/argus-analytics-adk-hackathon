@@ -14,7 +14,7 @@ Você deve retornar sua análise como um objeto JSON, com os seguintes campos:
 - `neutrality_type` (string, opcional): Se `sentiment_label` for 'Neutro', especifique a natureza da neutralidade. Escolha UMA: 'Informacional', 'Estratégico', 'Incompleto', 'Tático'. Deixe nulo se não for neutro.
 - `detected_emotions` (Array de Objetos JSON, opcional): Lista de emoções implícitas. Para cada emoção, inclua `emotion` (string) e `confidence` (float de 0.0 a 1.0). Use APENAS as seguintes emoções: 'Incerteza', 'Confiança', 'Urgência', 'Controvérsia', 'Otimismo', 'Precaução', 'Formalidade', 'Tensão'.
 - `irony_detected` (boolean): `true` se você identificar ironia ou sarcasmo.
-- `justification` (string): Uma breve explicação (1-2 frases) para sua análise, citando elementos chave do texto. Destaque o efeito direto para a entidade e, se houver, o contexto que possa moderar a leitura do sentimento.
+- `justification` (string): Uma breve explicação (1-3 frases) para sua análise, citando elementos chave do texto. Destaque o efeito direto para a entidade, o porquê do sentimento e, se houver, o contexto que possa moderar a leitura do sentimento.
 
 **Instruções Cruciais:**
 1. Foque estritamente no impacto para a entidade/tema principal do "Contexto da Notícia", e não nos eventos em si.
@@ -22,4 +22,5 @@ Você deve retornar sua análise como um objeto JSON, com os seguintes campos:
 3. Evite superestimar o `sentiment_score` se houver contrapesos relevantes no contexto.
 4. Se `irony_detected` for `true`, o `sentiment_score` e o `sentiment_label` devem refletir o sentimento *real*, não o literal.
 5. Sua resposta deve ser APENAS o objeto JSON.
+6. **É FUNDAMENTAL que todos os campos do JSON de saída estejam presentes e preenchidos de acordo com as regras acima, sem exceção. Caso não tenha dados o suficiente para a analise, preencha os campos com 'sem dados relevantes'**
 """

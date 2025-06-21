@@ -14,6 +14,7 @@ import logging
 from pathlib import Path 
 from newspaper import Config as NewspaperConfig
 import nltk
+import pytz
 from config import settings
 from google.genai.types import GenerationConfig, SafetySetting, ThinkingConfig, GenerateContentConfig
 from google.adk.planners.built_in_planner import BuiltInPlanner
@@ -91,14 +92,12 @@ LOGGING_LEVEL = getattr(logging, LOGGING_LEVEL_STR, logging.INFO)
 # Todas as mensagens com nível igual ou superior a LOGGING_LEVEL serão processadas.
 logging.basicConfig(
     level=LOGGING_LEVEL,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(str(LOG_FILE), mode='w', encoding='utf-8'), # <--- ADICIONE AQUI
-        logging.StreamHandler(sys.stdout) # O StreamHandler geralmente lida bem, mas podemos adicionar por segurança se necessário.
+        logging.FileHandler(LOG_FILE, encoding='utf-8', errors='replace'), # <<< ADICIONADO errors='replace'
+        logging.StreamHandler(sys.stdout)
     ]
 )
-
-# Obtém um logger para este módulo.
 logger = logging.getLogger(__name__)
 
 # --- Constantes da Aplicação ---
@@ -172,7 +171,7 @@ SAFETY_SETTINGS = [
 AGENT_PROFILES = {
     # Perfil para agentes que orquestram e usam ferramentas. A temperatura baixa garante previsibilidade.
     "orquestrador": {
-        "model_name": "gemini-2.5-flash-preview-05-20",
+        "model_name": "gemini-2.5-flash",
         "generate_content_config": GenerateContentConfig(
             temperature=0.1,
             safety_settings=SAFETY_SETTINGS
@@ -181,7 +180,7 @@ AGENT_PROFILES = {
     
     # Perfil para agentes de análise que precisam de máxima qualidade e nuance.
     "analista_profundo": {
-        "model_name": "gemini-2.5-flash-preview-05-20",
+        "model_name": "gemini-2.5-flash",
         "generate_content_config": GenerateContentConfig(
             temperature=0.5,
             safety_settings=SAFETY_SETTINGS
@@ -193,7 +192,7 @@ AGENT_PROFILES = {
     
     # Perfil para agentes de análise factual e rápida (Resumo, Entidades).
     "analista_rapido": {
-        "model_name": "gemini-2.5-flash-preview-05-20",
+        "model_name": "gemini-2.5-flash",
         "generate_content_config": GenerateContentConfig(
             temperature=0.2,
             safety_settings=SAFETY_SETTINGS
@@ -206,7 +205,7 @@ AGENT_PROFILES = {
 
     # Perfil específico para o Avaliador CRAAP com Grounding.
     "avaliador_craap": {
-        "model_name": "gemini-2.5-pro-preview-05-06",
+        "model_name": "gemini-2.5-flash",
         "generate_content_config": GenerateContentConfig(temperature=0.2)
     }
 }
@@ -250,7 +249,11 @@ def get_newspaper3k_config():
 
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "argus-analytics")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") 
+TEXT_EMBBEDING = os.getenv("GOOGLE_TEXT_EMBBEDING ", "text-embedding-005") 
+MAX_LLM_ANALYSIS_RETRIES = 3 # Número máximo de vezes que um artigo será reenviado para reanálise LLM por falhas de integridade
+BASE_RETRY_DELAY_SECONDS = 60 # Atraso base (em segundos) para a próxima retentativa de análise LLM (exponencial)
 
+TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
 QUANTIDADE_EXTRACAO = 10000
 QUANTIDADE_AVALIACAO = 100

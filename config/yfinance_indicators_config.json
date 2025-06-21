@@ -25,7 +25,8 @@
       "yfinance_data_type": "INFO",
       "info_fields": {
         "beta": {"db_indicator_name_suffix": "Beta", "db_indicator_type": "market_risk_metric", "db_indicator_unit":"5Y Monthly"},
-        "marketCap": {"db_indicator_name_suffix": "Valor de Mercado", "db_indicator_type": "valuation", "db_indicator_unit": "BRL"}
+        "marketCap": {"db_indicator_name_suffix": "Valor de Mercado", "db_indicator_type": "valuation", "db_indicator_unit": "BRL"},
+        "dividendYield": {"db_indicator_name_suffix": "Dividend Yield", "db_indicator_type": "dividend_metric", "db_indicator_unit": "%"}
       }
     }
   ],

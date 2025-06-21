@@ -63,6 +63,9 @@ class RSSCollector:
             options.add_argument("--disable-blink-features=AutomationControlled")
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
+            options.add_argument("--enable-unsafe-swiftshader")  # 👈 Flag exigida
+            options.add_argument("--ignore-gpu-blocklist")   
+            options.add_argument("--disable-webgl")  # Adicione isso às opções    # 👈 Ignora bloqueios de GPU
             service = Service(ChromeDriverManager().install())
             driver = webdriver.Chrome(service=service, options=options)
             # Define um timeout MÁXIMO para o carregamento de qualquer página

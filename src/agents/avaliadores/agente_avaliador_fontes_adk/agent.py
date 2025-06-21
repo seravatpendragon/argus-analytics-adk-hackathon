@@ -33,7 +33,7 @@ except ImportError as e:
 # --- Definições dos Agentes ---
 
 # Agente Principal (Avaliador)
-profile = settings.AGENT_PROFILES.get("avaliador")
+profile = settings.AGENT_PROFILES.get("avaliador_craap")
 AgenteAvaliadorDeFontes_ADK = LlmAgent(
     name="agente_avaliador_fontes",
     model=profile.get("model_name"),
@@ -51,12 +51,14 @@ Retorne APENAS o JSON corrigido. Não adicione comentários, explicações, ou a
 JSON com erro:
 {text_with_error}
 """
-corrector_config = settings.AGENT_CONFIGS.get("coletor", {}) 
+corrector_config = settings.AGENT_PROFILES.get("analista_rapido", {}) 
 JSONCorrectorAgent = LlmAgent(
     name="json_corrector_agent",
-    model=corrector_config.get("model_name"),
-    # A instrução agora será formatada dinamicamente, então o padrão pode ser simples.
-    instruction="Você é um especialista em corrigir sintaxe JSON." 
+    model=profile.get("model_name"),
+    generate_content_config=profile.get("generate_content_config"),
+    planner=profile.get("planner"),
+    instruction=JSON_REPAIR_PROMPT,
+    description="Especialista em corrigir sintaxe JSON." 
 )
 
 

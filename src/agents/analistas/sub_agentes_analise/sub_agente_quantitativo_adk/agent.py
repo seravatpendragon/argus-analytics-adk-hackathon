@@ -1,13 +1,22 @@
+# src/agents/sub_agente_quantitativo_adk/agent.py (CONTEÚDO CORRIGIDO PARA _run_async_impl)
+
 import os
 import sys
 from pathlib import Path
 import asyncio
 import json
 
-# Bloco de import padrão
+# Bloco de import padrão (VERIFIQUE O CAMINHO CORRETO)
 try:
     CURRENT_SCRIPT_DIR = Path(__file__).resolve().parent
-    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent.parent
+    # Ajuste o PROJECT_ROOT conforme a estrutura real do seu projeto.
+    # Se 'config' e 'src' estão um nível acima de 'agents', então é .parent.parent.parent
+    # Se 'agents' está direto no root, então é .parent.parent
+    # Pelo seu log, parece que precisa ser .parent.parent.parent.parent (4 níveis) para o teste isolado rodar,
+    # mas para o Agente Gerenciador, o caminho deve ser relativo ao root principal.
+    # Vamos usar o caminho que parece funcionar para o Agente Gerenciador: .parent.parent.parent (3 níveis)
+    # E vamos confiar que a importação de config está OK.
+    PROJECT_ROOT = CURRENT_SCRIPT_DIR.parent.parent.parent
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 except NameError:
@@ -20,7 +29,8 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 
-from .tools.tool_calculate_text_metrics import analyze_text_metrics
+# Importa a função Python diretamente (não mais como um 'tool_')
+from src.agents.analistas.sub_agentes_analise.sub_agente_quantitativo_adk.tools.tool_calculate_text_metrics import analyze_text_metrics
 
 class SubAgenteQuantitativo(BaseAgent):
     """
@@ -34,28 +44,31 @@ class SubAgenteQuantitativo(BaseAgent):
         """
         Recebe o texto do usuário e passa para a ferramenta de análise.
         """
-
         settings.logger.info(f"Agente {self.name} iniciado.")
         
-       # --- INÍCIO DA CORREÇÃO ---
         text_to_analyze = ""
         # Acessa diretamente o conteúdo do usuário para a invocação atual
         if context.user_content and context.user_content.parts:
             text_to_analyze = context.user_content.parts[0].text
-        # --- FIM DA CORREÇÃO ---
 
         if not text_to_analyze:
             error_msg = json.dumps({"status": "error", "message": "Nenhum texto fornecido para análise no 'user_content'."})
             yield Event(author=self.name, content=Content(parts=[Part(text=error_msg)]))
             return
-        yield Event(
-            author=self.name,
-            content=Content(parts=[Part(text="Analisando métricas quantitativas do texto...")])
-        )
+        
+        # <<< REMOVER ESTE PRIMEIRO YIELD EVENT! >>>
+        # Ele está gerando uma resposta não JSON que está sendo capturada.
+        # yield Event(
+        #     author=self.name,
+        #     content=Content(parts=[Part(text="Analisando métricas quantitativas do texto...")])
+        # )
+        
+        # <<< Substituir o yield Event por um LOG >>>
+        settings.logger.info(f"Sub-agente '{self.name}' iniciando cálculo de métricas para texto.")
         
         metrics = analyze_text_metrics(text_to_analyze)
         
-        # Garante que a resposta final seja sempre um JSON string
+        # Este é o ÚNICO Event final que deve ser retornado
         yield Event(
             author=self.name,
             content=Content(parts=[Part(text=json.dumps(metrics, ensure_ascii=False))])

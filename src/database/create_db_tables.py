@@ -94,6 +94,7 @@ class NewsArticle(Base):
     article_text_content = Column(Text, nullable=True) 
     article_type = Column(String, nullable=True) 
     llm_analysis_json = Column(JSON, nullable=True) # Agora reservado para os resultados da análise do LLM
+    conflict_analysis_json = Column(JSON, nullable=True)
     embedding = Column(Vector(768), nullable=True) 
     # NOVAS COLUNAS ADICIONADAS:
     summary = Column(Text, nullable=True)
@@ -106,6 +107,8 @@ class NewsArticle(Base):
     # NOVOS CAMPOS PARA O MECANISMO DE RETENTATIVA:
     retries_count = Column(Integer, default=0, nullable=False) # Contagem de tentativas
     next_retry_at = Column(DateTime(timezone=True), nullable=True) # Próxima data de retentativa
+    overall_confidence_score = Column(Float, nullable=True) # Score combinado de 0 a 100
+    source_credibility = Column(Float, nullable=True) # Credibilidade da fonte (0 a 1), redundante com NewsSource.base_credibility_score, mas útil para o cache e snapshot
     news_source = relationship("NewsSource", back_populates="articles")
     company_links = relationship("NewsArticleCompanyLink", back_populates="news_article")
     segment_links = relationship("NewsArticleSegmentLink", back_populates="news_article")

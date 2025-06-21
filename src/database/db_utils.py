@@ -5,16 +5,17 @@ import json
 import re
 import sys
 import os
+import traceback
 from venv import logger
 import numpy as np
-from sqlalchemy import bindparam, create_engine, or_, select, func, text, update
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import and_, bindparam, create_engine, or_, select, func, text, update
+from sqlalchemy.orm import sessionmaker, Session, joinedload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects import postgresql
 from datetime import date, datetime, timedelta, timezone
 import pandas as pd # Adicionado para o caso de uso de get_latest_effective_date
 
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 
 import vertexai
 from vertexai.language_models import TextEmbeddingModel
@@ -49,7 +50,7 @@ except ImportError as e:
 # Inicializa o modelo aqui ou de forma global para reutilização
 try:
     vertexai.init(project=settings.PROJECT_ID, location=settings.LOCATION)
-    embedding_model_for_db = TextEmbeddingModel.from_pretrained("text-embedding-005")
+    embedding_model_for_db = TextEmbeddingModel.from_pretrained(settings.TEXT_EMBBEDING)
 
 except Exception as e:
     settings.logger.warning(f"Não foi possível inicializar o modelo de embedding no db_utils: {e}")
@@ -495,7 +496,7 @@ def get_assets_by_source(source_name: str) -> List[Dict[str, any]]:
         stmt = select(
             Company.company_id,
             Company.ticker,
-            Company.company_name,
+            Company.name,
             Company.source
         ).where(Company.source == source_name)
         
@@ -630,79 +631,368 @@ def get_or_create_segment(session: Session, segment_name: str, subsector_id: int
         settings.logger.info(f"    Criado novo Segmento: '{segment_name}'")
     return segment
 
-def get_articles_pending_analysis(session: Session, limit: int = 50) -> list[dict]:
+def get_articles_pending_analysis(session: Session, limit: int = 100):
     """
-    Retorna artigos pendentes de análise como dicionários
+    Busca artigos que precisam de análise LLM completa, incluindo dados da fonte.
     """
-    try:
-        articles = (
-            session.query(NewsArticle)
-            .filter(
-                NewsArticle.processing_status == 'pending_llm_analysis',
-                NewsArticle.article_text_content.isnot(None)
-            )
-            .limit(limit)
-            .all()
+    now = datetime.now(settings.TIMEZONE)
+    articles_data = (
+        session.query(NewsArticle)
+        .options(joinedload(NewsArticle.news_source)) 
+        .filter(
+            # CORRIGIDO: Agora buscando artigos com status 'pending_llm_analysis'
+            NewsArticle.processing_status == 'pending_llm_analysis', 
+            (NewsArticle.next_retry_at.is_(None)) | (NewsArticle.next_retry_at <= now)
         )
-        
-        # Converter para dicionários
-        return [
-            {
-                "news_article_id": a.news_article_id,
-                "article_text_content": a.article_text_content
-            } 
-            for a in articles
-        ]
-    except Exception as e:
-        settings.logger.error(f"Erro ao buscar artigos pendentes: {e}")
-        return []
+        .limit(limit)
+        .all()
+    )
 
-def update_article_with_analysis(article_id: int, analysis_dict: dict):
+    result_list = []
+    for article in articles_data:
+        source_credibility = article.news_source.base_credibility_score if article.news_source else 0.5
+        news_source_url = article.news_source.url_base if article.news_source and article.news_source.url_base else article.article_link 
+        news_source_name = article.news_source.name if article.news_source else "Desconhecida"
+
+        result_list.append({
+            "news_article_id": article.news_article_id,
+            "headline": article.headline,
+            "article_link": article.article_link,
+            "publication_date": article.publication_date.isoformat() if article.publication_date else None,
+            "article_text_content": article.article_text_content,
+            "news_source_url": news_source_url,      
+            "source_credibility": source_credibility, 
+            "news_source_name": news_source_name      
+        })
+    return result_list
+
+def update_article_with_analysis(article_id: int, analysis_results: dict):
     """
-    Atualiza um artigo com o dicionário de análise e muda seu status.
+    Atualiza um artigo com os resultados da análise LLM e os scores de confiança.
+    analysis_results deve conter:
+    - 'llm_analysis_output': O JSON principal da análise do LLM.
+    - 'conflict_analysis_output': O JSON de resultado do ConflictDetector.
+    - 'source_credibility': O score de credibilidade da fonte.
+    - 'overall_confidence_score': O score de confiança geral calculado.
+    - 'processing_status': O status final do processamento (ex: 'analysis_complete', 'analysis_rejected', 'pending_llm_analysis', 'analysis_failed').
     """
     with get_db_session() as session:
+        article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
+        if not article:
+            settings.logger.error(f"Artigo com ID {article_id} não encontrado para atualização.")
+            return
+
         try:
-            article = session.query(NewsArticle).filter(NewsArticle.news_article_id == article_id).first()
-            if article:
-                article.llm_analysis_json = analysis_dict 
-                article.processing_status = 'analysis_complete'
-                session.commit()
-                settings.logger.info(f"Análise do artigo {article_id} salva com sucesso no banco de dados.")
+            # 1. Atualiza os JSONs e scores
+            article.llm_analysis_json = analysis_results.get("llm_analysis_output")
+            article.conflict_analysis_json = analysis_results.get("conflict_analysis_output")
+            article.source_credibility = analysis_results.get("source_credibility")
+            article.overall_confidence_score = analysis_results.get("overall_confidence_score")
+            
+            # 2. Determina o novo status de processamento e lógica de retentativa
+            new_processing_status = analysis_results.get("processing_status", 'analysis_failed') # Default para falha
+            
+            # Lógica para artigos que são reenviados para 'pending_llm_analysis'
+            if new_processing_status == 'pending_llm_analysis':
+                article.retries_count = (article.retries_count or 0) + 1 # Incrementa
+                # Cálculo de delay para retentativa exponencial
+                delay = settings.BASE_RETRY_DELAY_SECONDS * (2 ** (article.retries_count - 1)) # -1 porque a primeira retentativa é a 2a tentativa
+                article.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
+                settings.logger.info(f"Artigo {article_id} agendado para reanálise LLM. Tentativa: {article.retries_count}. Próxima em {delay}s.")
+                
+                # Se atingiu o máximo de retentativas para análise LLM, marca como falha final
+                if article.retries_count >= settings.MAX_LLM_ANALYSIS_RETRIES:
+                    new_processing_status = 'analysis_failed_max_retries' # Novo status de falha final
+                    settings.logger.error(f"Artigo {article_id} atingiu o máximo de retentativas de reanálise LLM ({settings.MAX_LLM_ANALYSIS_RETRIES}).")
+                    article.next_retry_at = None # Não agendar mais retentativas
             else:
-                settings.logger.warning(f"Artigo com ID {article_id} não encontrado para salvar a análise.")
+                # Se o status é final ('analysis_complete', 'analysis_rejected', 'analysis_failed'), reseta contadores
+                article.retries_count = 0
+                article.next_retry_at = None
+
+            article.processing_status = new_processing_status
+            article.last_processed_at = datetime.now(settings.TIMEZONE)
+
+            session.commit()
+            settings.logger.info(f"Análise do artigo {article_id} salva com sucesso no banco de dados com status: {article.processing_status}.")
         except Exception as e:
             session.rollback()
-            settings.logger.error(f"Erro ao salvar análise para o artigo {article_id}: {e}", exc_info=True)
+            settings.logger.error(f"Erro ao salvar análise do artigo {article_id} no banco de dados: {e}", exc_info=True)
 
 def get_analyses_for_topic(session: Session, topic: str, days_back: int = 7) -> list[dict]:
     """
-    Busca no banco todas as análises de artigos que mencionam um determinado tópico
-    nos últimos 'days_back' dias.
+    Busca análises completas (llm_analysis_json e conflict_analysis_json)
+    para um tópico/empresa nos últimos dias.
     """
-    try:
-        end_date = datetime.now(timezone.utc)
-        start_date = end_date - timedelta(days=days_back)
-        
-        # Filtra artigos que mencionam o tópico (case-insensitive) e que foram analisados
-        articles = (
-            session.query(NewsArticle)
-            .filter(
+    start_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+
+    # Filtra por artigos completos e que contenham o tópico na manchete ou nas entidades
+    # e cujo llm_analysis_json não seja nulo.
+    query_results = (
+        session.query(NewsArticle)
+        .options(joinedload(NewsArticle.company_links)) # Para filtrar por empresa se necessário
+        .filter(
                 NewsArticle.processing_status == 'analysis_complete',
-                NewsArticle.llm_analysis_json != None,
-                NewsArticle.publication_date.between(start_date, end_date),
+                NewsArticle.llm_analysis_json.isnot(None),
+                NewsArticle.publication_date >= start_date,
                 or_(
-                    NewsArticle.headline.ilike(f'%{topic}%'),
-                    NewsArticle.article_text_content.ilike(f'%{topic}%')
+                    NewsArticle.headline.ilike(f'%{topic}%'), # Busca no título
+                    # Busca por empresas relacionadas se 'topic' for um nome de empresa
+                    # Supondo que 'Company' é importado e 'company_links' é um relacionamento
+                    NewsArticle.company_links.any(Company.name.ilike(f'%{topic}%')),
+                    # <<< AQUI ESTÁ A CORREÇÃO >>>
+                    # Acessa 'foco_principal_sugerido' como TEXTO (->>)
+                    NewsArticle.llm_analysis_json['analise_entidades'].op('->>')('foco_principal_sugerido').ilike(f'%{topic}%'),
+                    # Acessa 'entidades_identificadas' como TEXTO (->>) e busca nele
+                    # Isso converterá o array JSON em uma string '[{"tipo": ...}, {"tipo": ...}]'
+                    # e fará a busca de substring nessa string.
+                    NewsArticle.llm_analysis_json['analise_entidades'].op('->>')('entidades_identificadas').ilike(f'%{topic}%')
                 )
             )
-            .order_by(NewsArticle.publication_date.asc())
+            .order_by(NewsArticle.publication_date.desc())
+            .limit(100) 
             .all()
-        )
-        return [article.llm_analysis_json for article in articles]
+    )
+
+    formatted_analyses = []
+    for article in query_results:
+        # Retorna o llm_analysis_json completo, o conflict_analysis_json,
+        # e os scores de alto nível para o consolidador usar.
+        formatted_analyses.append({
+            "news_article_id": article.news_article_id,
+            "headline": article.headline,
+            "publication_date": article.publication_date.isoformat() if article.publication_date else None,
+            "llm_analysis": article.llm_analysis_json, # O JSON completo da análise
+            "conflict_analysis": article.conflict_analysis_json, # O JSON completo da auditoria
+            "overall_confidence_score": article.overall_confidence_score,
+            "source_credibility": article.source_credibility,
+        })
+    return formatted_analyses
+
+def get_market_data_for_topic(session: Session, topic: str, days_back: int = 7, indicators: List[str] = None) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Busca dados de mercado/macro para um tópico nos últimos dias.
+    Esta é uma implementação de exemplo. Você precisará adaptá-la às suas tabelas reais.
+    """
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=days_back)
+    
+    # Dicionário para armazenar os dados por tipo de indicador
+    all_market_data = {}
+
+    # Exemplo (você precisará adaptar para suas tabelas FredData, BcbData, etc.)
+    # Se você não tem tabelas separadas para isso, você precisaria criar ou
+    # fazer essa busca de forma mais genérica, talvez baseada em 'tags' de notícias.
+
+    # Exemplo para dados FRED (assumindo que você tem um modelo FredData e coluna 'topic_related')
+    # if "FRED" in (indicators or ["FRED"]): # Ou se o tópico estiver em algum mapeamento Fred
+    #     fred_data = session.query(FredData).filter(
+    #         FredData.date >= start_date,
+    #         FredData.topic_related == topic # Exemplo de como filtrar
+    #     ).all()
+    #     all_market_data['FRED_INDICATORS'] = [{"date": d.date.isoformat(), "value": d.value} for d in fred_data]
+    
+    # Para o hackathon, vamos simular buscando apenas Brent, pois é um bom indicador global
+    # Assumindo que você tem uma tabela 'EiaBrentDaily' ou 'FredBrentDaily' com 'date' e 'value'
+    try:
+        from .create_db_tables import FredBrentDaily # Exemplo, ajuste o modelo real
+        brent_data = session.query(FredBrentDaily).filter(
+            FredBrentDaily.date >= start_date
+        ).order_by(FredBrentDaily.date.desc()).limit(days_back).all() # Pega os últimos 'days_back' dias
+        
+        all_market_data['BRENT_OIL_DAILY'] = [{"date": d.date.isoformat(), "value": d.value} for d in brent_data]
+        
+    except ImportError:
+        settings.logger.warning("Modelo FredBrentDaily não encontrado para buscar dados de Brent. Pule esta parte.")
     except Exception as e:
-        settings.logger.error(f"Erro ao buscar análises para o tópico '{topic}': {e}")
-        return []
+        settings.logger.error(f"Erro ao buscar dados de Brent: {e}")
+
+    # Você expandiria isso para outras fontes (BCB, EIA, Fundamentus, etc.)
+    # filtrando pelos IDs ou nomes de indicadores que o consolidador pode pedir.
+
+    return all_market_data
+
+def get_quantitative_data_for_topic(session: Session, topic_or_ticker: str, days_back: int = 7, specific_indicators: Optional[List[str]] = None) -> Dict[str, Any]:
+    """
+    Busca dados quantitativos (fundamentos da empresa, preços de commodities, indicadores macro)
+    para um tópico/ticker nos últimos dias, considerando a frequência dos indicadores e nomes exatos.
+    """
+    end_date = datetime.now(timezone.utc).date() 
+    start_date = end_date - timedelta(days=days_back)
+    
+    all_data = {
+        "COMPANY_FUNDAMENTALS": {}, 
+        "COMPANY_MARKET_DATA": {}, 
+        "MACRO_COMMODITY_DATA": {}
+    }
+
+    # Contexto da empresa (ticker e nome)
+    company_obj = session.query(Company).filter(
+        or_(
+            Company.ticker.ilike(topic_or_ticker), 
+            Company.name.ilike(f'%{topic_or_ticker}%')
+        )
+    ).first()
+
+    if company_obj: # company_obj não é None
+        # <<< ADICIONAR ESTES LOGS PARA DEPURAR O company_obj >>>
+        logger.info(f"DB_UTILS: Empresa encontrada: ID={company_obj.company_id}, Ticker={company_obj.ticker}")
+        if hasattr(company_obj, 'name'):
+            logger.info(f"DB_UTILS: company_obj TEM o atributo 'company_name'. Valor: {company_obj.name}")
+        else:
+            logger.error(f"DB_UTILS: company_obj NÃO TEM o atributo 'company_name'. Atributos disponíveis: {company_obj.__dict__.keys()}")
+        
+        # Esta linha ainda causará o erro se 'company_name' não estiver acessível,
+        # mas os logs acima nos darão a informação antes do crash.
+        all_data['COMPANY_FUNDAMENTALS_CONTEXT'] = {
+            "company_name": company_obj.name, 
+            "ticker": company_obj.ticker
+        }
+
+        # --- Buscar FUNDAMENTOS ESTÁTICOS ---
+        fundamental_metrics_names = [
+            "P/L", "P/VP", "EV/EBITDA", "Dividend Yield", "ROE", "ROIC", 
+            "Margem líquida", "Margem bruta", "Margem EBIT",
+            "Liquidez corrente", "Dívida bruta/Patrim", "Dívida líquida/EBITDA",
+            "Ativo", "Ativo Circulante", "Dívida Bruta", "Dívida Líquida", 
+            "Patrimônio Líquido", "Receita Líquida", "EBIT", "Lucro Líquido"
+        ]
+        
+        # <<< ADICIONAR ESTE LOG >>>
+        logger.info(f"DB_UTILS: Buscando metadados para FUNDAMENTOS da empresa '{company_obj.ticker}': {fundamental_metrics_names}")
+        
+        fundamental_indicators = session.query(EconomicIndicator).filter(
+            EconomicIndicator.name.in_(fundamental_metrics_names),
+            EconomicIndicator.indicator_type.like('Fundamental%') 
+        ).all()
+        
+        for ind in fundamental_indicators:
+            # Para fundamentos, pegamos o último valor disponível (não filtrado por data)
+            latest_value = session.query(EconomicIndicatorValue).filter(
+                EconomicIndicatorValue.indicator_id == ind.indicator_id,
+                EconomicIndicatorValue.company_id == company_obj.company_id,
+            ).order_by(EconomicIndicatorValue.effective_date.desc()).first()
+            
+            if latest_value and latest_value.value_numeric is not None:
+                all_data['COMPANY_FUNDAMENTALS'][ind.name] = {
+                    "value": latest_value.value_numeric,
+                    "unit": ind.unit,
+                    "date": latest_value.effective_date.isoformat()
+                }
+            else:
+                logger.debug(f"Fundamento '{ind.name}' para {company_obj.ticker} não encontrado ou nulo.")
+
+
+        # --- Buscar DADOS DE MERCADO DA EMPRESA (Preço Atual, Beta) ---
+        company_market_metrics_names = [
+            f"{company_obj.ticker} Preço Fechamento", 
+            f"{company_obj.ticker} Beta",
+            f"{company_obj.ticker} Preço Máximo", 
+            f"{company_obj.ticker} Preço Mínimo",
+            f"{company_obj.ticker} Preço Abertura",
+            f"{company_obj.ticker} Volume",
+            f"{company_obj.ticker} Valor de Mercado"
+        ]
+        
+        # <<< ADICIONAR ESTE LOG >>>
+        logger.info(f"DB_UTILS: Buscando metadados para MÉTRICAS DE MERCADO da empresa '{company_obj.ticker}': {company_market_metrics_names}")
+
+        market_indicators_company_query = session.query(EconomicIndicator).filter(
+            EconomicIndicator.name.in_(company_market_metrics_names)
+        ).all()
+
+        for ind in market_indicators_company_query:
+            # Para preço atual e beta, queremos o ABSOLUTO mais recente até a end_date
+            # Removemos o filtro 'effective_date >= start_date' para pegar o último disponível
+            latest_value = session.query(EconomicIndicatorValue).filter(
+                EconomicIndicatorValue.indicator_id == ind.indicator_id,
+                EconomicIndicatorValue.company_id == company_obj.company_id,
+                EconomicIndicatorValue.effective_date <= end_date # Pega o mais recente até hoje
+            ).order_by(EconomicIndicatorValue.effective_date.desc()).first()
+            
+            if latest_value and latest_value.value_numeric is not None:
+                # ... (o resto do código para popular all_data['COMPANY_MARKET_DATA'] permanece o mesmo) ...
+                standard_name = ind.name.replace(f"{company_obj.ticker} ", "").replace("Preço Fechamento", "Current_Price").replace("Preço Máximo", "High_Price").replace("Preço Mínimo", "Low_Price").replace("Preço Abertura", "Open_Price").replace("Valor de Mercado", "Market_Cap").replace("Volume", "Volume")
+                all_data['COMPANY_MARKET_DATA'][standard_name] = {
+                    "value": latest_value.value_numeric,
+                    "unit": ind.unit,
+                    "date": latest_value.effective_date.isoformat()
+                }
+            else:
+                logger.debug(f"Métrica de mercado '{ind.name}' para {company_obj.ticker} não encontrada ou nula. Company ID: {company_obj.company_id}.")
+
+
+    # 2. Buscar dados de indicadores macroeconômicos e de commodities
+    # Usar os nomes exatos do seu output (ex: "Ibovespa (^BVSP) Fechamento")
+    macro_commodity_indicator_names_to_fetch = specific_indicators or [
+        "EIA Preço Petróleo Brent Spot (Diário)",
+        "FRED US 10-Year Treasury Constant Maturity Rate (Daily)", 
+        "Ibovespa (^BVSP) Fechamento", 
+        "FRED CBOE Crude Oil ETF Volatility Index (OVX)", 
+        "BCB Selic Meta Definida Copom", 
+        "BCB IPCA Variação Mensal", 
+        "PIM-PF - Indústria Geral (Tabela 8888)", 
+        "PNAD Contínua - Taxa de Desocupação (Tabela 6381)", 
+        "PMC - Receita Nominal Varejo (Tabela 8880)", 
+        "IPP - Indústria Geral (SIDRA 6903)", 
+        "FRED WTI Crude Oil Spot Price (Diário)", 
+        "FRED Trade Weighted US Dollar Index: Broad, Goods and Services (Daily)", 
+        "BCB Câmbio USD PTAX", 
+        "BCB IBC-Br dessazonalizado (Índice)", 
+        "BCB Inadimplência PF (Rec. Livres)", 
+        "BCB Inadimplência PJ (Rec. Livres)", 
+        "BCB Saldo Total Crédito PF", 
+        "BCB Saldo Total Crédito PJ", 
+        "BCB Dívida Líquida Setor Público (% PIB)", 
+        "BCB Dívida Bruta Governo Geral (% PIB)", 
+        "BCB Resultado Nominal Setor Público (% PIB)", 
+        "BCB Juros Nominais Setor Público (Acum. 12m)", 
+        "BCB PIB Nominal (Acumulado 12 meses)", 
+    ]
+    
+    # <<< ADICIONAR ESTE LOG >>>
+    logger.info(f"DB_UTILS: Buscando metadados para indicadores macro/commodities: {macro_commodity_indicator_names_to_fetch}")
+    
+    indicator_metadata_map = {ind.name: ind for ind in session.query(EconomicIndicator).filter(EconomicIndicator.name.in_(macro_commodity_indicator_names_to_fetch)).all()}
+
+    for indicator_name in macro_commodity_indicator_names_to_fetch:
+        indicator_obj = indicator_metadata_map.get(indicator_name)
+        if not indicator_obj:
+            logger.warning(f"Metadados para o indicador '{indicator_name}' não encontrados em EconomicIndicators. Pulando.")
+            continue
+
+        query = session.query(EconomicIndicatorValue).filter(
+            EconomicIndicatorValue.indicator_id == indicator_obj.indicator_id,
+            EconomicIndicatorValue.effective_date <= end_date, # Sempre pega até a data final
+            EconomicIndicatorValue.company_id.is_(None), # Dados gerais
+            EconomicIndicatorValue.segment_id.is_(None)  # Dados gerais
+        ).order_by(EconomicIndicatorValue.effective_date.desc())
+
+        latest_value_in_period = None
+
+        if indicator_obj.frequency in ['D', 'W']: # Diário ou Semanal: prioriza no período
+            value_in_period = query.filter(EconomicIndicatorValue.effective_date >= start_date).first()
+            if value_in_period:
+                latest_value_in_period = value_in_period
+            else:
+                latest_value_in_period = query.first() # Pega o mais recente absoluto se não houver no período
+                if latest_value_in_period:
+                    logger.info(f"Indicador '{indicator_name}': Não encontrado no período de {days_back} dias. Usando valor mais recente de {latest_value_in_period.effective_date.isoformat()}.")
+        else: # Mensal, Trimestral, Anual: pega o último valor absoluto até a end_date
+            latest_value_in_period = query.first()
+            
+        if latest_value_in_period and latest_value_in_period.value_numeric is not None:
+            all_data['MACRO_COMMODITY_DATA'][indicator_name] = {
+                "value": latest_value_in_period.value_numeric,
+                "unit": indicator_obj.unit,
+                "date": latest_value_in_period.effective_date.isoformat(),
+                "frequency": indicator_obj.frequency 
+            }
+        else:
+            logger.debug(f"Indicador macro/commodity '{indicator_name}' não encontrado ou nulo no período.")
+    
+    return all_data
+
 
 def update_article_embedding(article_id: int, text: str):
     """
@@ -799,3 +1089,44 @@ def batch_update_precomputed_embeddings(embeddings_batch: list[tuple[int, list[f
             session.rollback()
             settings.logger.error(f"Erro ao salvar embeddings pré-calculados: {e}")
             raise
+
+def get_all_analyzed_articles(session: Session, limit: int = 5000) -> list[dict]:
+    """
+    Busca artigos analisados, incluindo o base_credibility_score da fonte relacionada.
+    """
+    settings.logger.info(f"Buscando até {limit} artigos com status 'analysis_complete'...")
+    try:
+        query = (
+            session.query(NewsArticle)
+            .options(joinedload(NewsArticle.news_source))
+            .filter(
+                NewsArticle.processing_status == 'analysis_complete',
+                NewsArticle.llm_analysis_json.isnot(None)
+            )
+            .order_by(NewsArticle.publication_date.desc())
+            .limit(limit)
+        )
+        analyzed_articles = query.all()
+        
+        settings.logger.info(f"Encontrados {len(analyzed_articles)} artigos analisados.")
+        
+        results = []
+        for article in analyzed_articles:
+            # Pega o score de credibilidade diretamente da coluna. Se não existir, default é 0.5.
+            base_credibility = article.news_source.base_credibility_score if article.news_source else 0.5
+
+            results.append({
+                "news_article_id": article.news_article_id,
+                "title": article.headline,
+                "url": article.article_link,
+                "published_at": article.publication_date,
+                "llm_analysis": article.llm_analysis_json,
+                # Passa o valor numérico diretamente para o handler
+                "source_base_credibility": base_credibility
+            })
+        return results
+
+    except Exception as e:
+        settings.logger.error(f"Erro ao buscar artigos analisados: {e}")
+        settings.logger.error(traceback.format_exc())
+        return []
